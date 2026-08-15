@@ -358,6 +358,19 @@ body {
     padding-top: 70px;
 }
 
+.auth-status {
+    width: min(1100px, calc(100% - 2rem));
+    margin: 0 auto 0.85rem;
+    padding: 0.7rem 1rem;
+    border: 1px solid rgba(122, 31, 54, 0.28);
+    border-radius: 14px;
+    background: rgba(255, 245, 246, 0.96);
+    color: var(--burgundy);
+    box-shadow: 0 8px 18px rgba(122, 31, 54, 0.08);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
 /* ─── Language Picker ─── */
 .lang-picker-wrap {
     text-align: center;
@@ -1117,6 +1130,11 @@ button.vocab-word.has-gloss.is-open {
     /* Sticky header is in-flow now, so the fixed-bar offset is not needed */
     #mainApp {
         padding-top: 0;
+    }
+    .auth-status {
+        width: calc(100% - 1.4rem);
+        margin: 0 auto 0.75rem;
+        font-size: 0.85rem;
     }
 }
 

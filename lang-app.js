@@ -3,26 +3,82 @@
  * Clean, modular architecture for the language learning app.
  */
 
+function setDisplay(node, visible) {
+    if (!node) return;
+    node.style.display = visible ? '' : 'none';
+}
+
+function setVisibleAuthStatus(message) {
+    const text = message || '';
+    const loginError = document.getElementById('loginError');
+    const authStatus = document.getElementById('authStatus');
+
+    if (loginError) loginError.textContent = text;
+    if (!authStatus) return;
+
+    authStatus.textContent = text;
+    setDisplay(authStatus, !!text);
+}
+
+function hideAuthUiControls() {
+    setDisplay(document.getElementById('googleLoginBtn'), false);
+    setDisplay(document.getElementById('topLoginBtn'), false);
+    setDisplay(document.getElementById('logoutBtn'), false);
+    setDisplay(document.getElementById('userAvatar'), false);
+    setDisplay(document.getElementById('userName'), false);
+}
+
+function createFallbackAuthService(config) {
+    const enabled = !!(config.features && config.features.firebaseAuth);
+    const message = 'Google sign-in is enabled, but the auth bootstrap failed to load.';
+
+    return {
+        async start() {
+            hideAuthUiControls();
+            if (!enabled) {
+                setVisibleAuthStatus('');
+                return { enabled: false, ready: false };
+            }
+            setVisibleAuthStatus(message);
+            console.error(message);
+            return { enabled: true, ready: false, error: new Error(message) };
+        },
+        renderAuthUi() {
+            hideAuthUiControls();
+        },
+        setLoginError(nextMessage) {
+            setVisibleAuthStatus(nextMessage || (enabled ? message : ''));
+        },
+        async signInWithGoogle() {
+            throw new Error(message);
+        },
+        async signOut() {},
+        onAuthStateChanged() {
+            return () => {};
+        },
+        async ensureUserProfile() {
+            return null;
+        },
+        async saveUserProfile() {},
+        isEnabled() {
+            return enabled;
+        },
+        isReady() {
+            return false;
+        },
+    };
+}
+
 const appConfig = globalThis.CATLINGO_CONFIG || { features: { firebaseAuth: false }, firebase: { scripts: [], project: {} } };
-const authService = globalThis.CatlingoAuth && typeof globalThis.CatlingoAuth.createAuthService === 'function'
-    ? globalThis.CatlingoAuth.createAuthService({
+const authService = globalThis.CatlingoAuthBootstrap && typeof globalThis.CatlingoAuthBootstrap.createAuthBootstrap === 'function'
+    ? globalThis.CatlingoAuthBootstrap.createAuthBootstrap({
         config: appConfig,
+        authModule: globalThis.CatlingoAuth,
         documentObj: document,
         windowObj: window,
         log: console,
     })
-    : {
-        start: async () => ({ enabled: false, ready: false }),
-        renderAuthUi() {},
-        setLoginError() {},
-        signInWithGoogle: async () => { throw new Error('Google sign-in is unavailable.'); },
-        signOut: async () => {},
-        onAuthStateChanged() { return () => {}; },
-        ensureUserProfile: async () => null,
-        saveUserProfile: async () => {},
-        isEnabled() { return false; },
-        isReady() { return false; },
-    };
+    : createFallbackAuthService(appConfig);
 
 // ═══════════ Application State ═══════════
 const state = {
@@ -42,6 +98,7 @@ const state = {
 // ═══════════ DOM References ═══════════
 const dom = {
     get loginError() { return document.getElementById('loginError'); },
+    get authStatus() { return document.getElementById('authStatus'); },
     get userAvatar() { return document.getElementById('userAvatar'); },
     get userName() { return document.getElementById('userName'); },
     get topLoginBtn() { return document.getElementById('topLoginBtn'); },

@@ -8,14 +8,25 @@ const htmlPath = path.join(rootDir, 'lang.html');
 const appPath = path.join(rootDir, 'lang-app.js');
 const configPath = path.join(rootDir, 'lang-config.js');
 const authPath = path.join(rootDir, 'lang-auth.js');
+const bootstrapPath = path.join(rootDir, 'lang-auth-bootstrap.js');
 
 function createNode(id) {
+    const attributes = new Map();
     return {
         id,
         style: { display: '' },
         textContent: '',
         src: '',
         dataset: {},
+        setAttribute(name, value) {
+            attributes.set(name, String(value));
+        },
+        getAttribute(name) {
+            return attributes.has(name) ? attributes.get(name) : null;
+        },
+        removeAttribute(name) {
+            attributes.delete(name);
+        },
     };
 }
 
@@ -101,6 +112,7 @@ test('static auth wiring removes bundled firebase and keeps auth off by default'
     const appSource = fs.readFileSync(appPath, 'utf8');
 
     assert.equal(/<script[^>]+firebasejs\/10\.14\.1\/firebase-[^"]+-compat\.js/.test(html), false, 'lang.html should not eagerly load Firebase scripts');
+    assert.match(html, /id="authStatus"[^>]+role="alert"[^>]+aria-live="assertive"/, 'main app should include a visible auth status region');
     assert.ok(fs.existsSync(configPath), 'Expected a central browser config file');
 
     const config = require(configPath);
@@ -199,12 +211,12 @@ test('enabled auth loads compat scripts and syncs language and level profile fie
 });
 
 test('enabled auth initialization failures surface in login error and console state', async () => {
-    assert.ok(fs.existsSync(authPath), 'Expected an auth lifecycle service file');
+    assert.ok(fs.existsSync(bootstrapPath), 'Expected an auth bootstrap file');
 
-    const { createAuthService } = require(authPath);
+    const { createAuthBootstrap } = require(bootstrapPath);
     const documentObj = createDocument();
     const errors = [];
-    const service = createAuthService({
+    const service = createAuthBootstrap({
         config: {
             features: { firebaseAuth: true },
             firebase: {
@@ -212,6 +224,7 @@ test('enabled auth initialization failures surface in login error and console st
                 project: { projectId: 'cat-language-1ecd4' },
             },
         },
+        authModule: require(authPath),
         documentObj,
         windowObj: {},
         loadScript: async () => {
@@ -228,5 +241,39 @@ test('enabled auth initialization failures surface in login error and console st
 
     assert.equal(result.ready, false);
     assert.match(documentObj.getElementById('loginError').textContent, /network down/i);
+    assert.match(documentObj.getElementById('authStatus').textContent, /network down/i);
+    assert.notEqual(documentObj.getElementById('authStatus').style.display, 'none');
+    assert.equal(errors.length, 1);
+});
+
+test('enabled auth surfaces missing bootstrap service in visible main-app status', async () => {
+    assert.ok(fs.existsSync(bootstrapPath), 'Expected an auth bootstrap file');
+
+    const { createAuthBootstrap } = require(bootstrapPath);
+    const documentObj = createDocument();
+    const errors = [];
+    const service = createAuthBootstrap({
+        config: {
+            features: { firebaseAuth: true },
+            firebase: { scripts: [] },
+        },
+        authModule: null,
+        documentObj,
+        windowObj: {},
+        log: {
+            error(...args) {
+                errors.push(args.join(' '));
+            },
+        },
+    });
+
+    const result = await service.start();
+
+    assert.equal(result.ready, false);
+    assert.match(String(result.error && result.error.message), /lang-auth\.js|bootstrap/i);
+    assert.match(documentObj.getElementById('loginError').textContent, /lang-auth\.js|bootstrap/i);
+    assert.match(documentObj.getElementById('authStatus').textContent, /lang-auth\.js|bootstrap/i);
+    assert.notEqual(documentObj.getElementById('authStatus').style.display, 'none');
+    assert.equal(documentObj.getElementById('topLoginBtn').style.display, 'none');
     assert.equal(errors.length, 1);
 });
