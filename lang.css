@@ -559,10 +559,16 @@ body {
 .cat-image {
     width: 180px;
     height: 180px;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
     display: block;
+    background: linear-gradient(135deg, rgba(255, 253, 247, 0.96), rgba(201, 162, 39, 0.18));
     filter: saturate(0.92) contrast(1.03);
     transition: opacity var(--transition-normal);
+}
+
+.cat-image.is-loading {
+    opacity: 0.72;
 }
 
 .cat-caption {

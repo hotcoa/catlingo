@@ -554,16 +554,189 @@ function mdBold(str) {
 }
 
 // ═══════════ Cat Image Service ═══════════
-async function fetchCatUrl(keyword) {
-    return `https://cataas.com/cat/says/${encodeURIComponent(keyword || 'Bonjour')}?size=200&color=white&fontSize=22`;
-}
+const CatImageService = (() => {
+    const LOAD_TIMEOUT_MS = 5000;
+    const LOCAL_CAT_PHOTOS = Object.freeze([
+        { path: 'assets/cats/burnt-pineapple-cat.jpg', credit: 'Burnt Pineapple Productions', license: 'CC0 1.0' },
+        { path: 'assets/cats/koiest-cat.jpg', credit: 'koiest', license: 'CC0 1.0' },
+        { path: 'assets/cats/dcoetzee-steve-cat.jpg', credit: 'D Coetzee', license: 'CC0 1.0' },
+        { path: 'assets/cats/iezalel-selfie-cat.jpg', credit: 'iezalel7williams', license: 'CC0 1.0' },
+    ]);
+    const ALT_TEXT = {
+        french: (keyword) => `Photo d’un chat pour « ${keyword || 'Bonjour'} »`,
+        korean: (keyword) => `“${keyword || '안녕하세요'}”를 위한 고양이 사진`,
+        hebrew: (keyword) => `תצלום של חתול עבור "${keyword || 'שלום'}"`,
+    };
+
+    function buildCataasUrl(keyword) {
+        return `https://cataas.com/cat/says/${encodeURIComponent(keyword || 'Bonjour')}?size=200&color=white&fontSize=22`;
+    }
+
+    function resolveAssetUrl(relativePath, baseHref) {
+        const base = baseHref || (typeof document !== 'undefined' ? document.baseURI : 'https://example.invalid/');
+        return new URL(relativePath, base).href;
+    }
+
+    function getFallbackPhotos(baseHref) {
+        return LOCAL_CAT_PHOTOS.map(photo => ({
+            ...photo,
+            src: resolveAssetUrl(photo.path, baseHref),
+        }));
+    }
+
+    function buildFallbackOrder(photos, random = Math.random) {
+        if (!photos.length) return [];
+        const startIndex = Math.floor(random() * photos.length);
+        return photos.slice(startIndex).concat(photos.slice(0, startIndex));
+    }
+
+    function buildAltText(lang, keyword) {
+        const builder = ALT_TEXT[lang] || ALT_TEXT.french;
+        return builder((keyword || '').trim());
+    }
+
+    function markLoading(imageEl, alt) {
+        if (!imageEl) return;
+        imageEl.alt = alt;
+        imageEl.classList.add('is-loading');
+        imageEl.style.opacity = '1';
+        imageEl.setAttribute('aria-busy', 'true');
+    }
+
+    function clearLoading(imageEl) {
+        if (!imageEl) return;
+        imageEl.classList.remove('is-loading');
+        imageEl.style.opacity = '1';
+        imageEl.removeAttribute('aria-busy');
+    }
+
+    function applyImage(imageEl, payload) {
+        if (!imageEl) return;
+        imageEl.src = payload.src;
+        imageEl.alt = payload.alt;
+        imageEl.dataset.catSource = payload.source;
+        clearLoading(imageEl);
+    }
+
+    function createBrowserLoader(createImage = () => new Image()) {
+        return function loadSource(src, { timeoutMs = LOAD_TIMEOUT_MS } = {}) {
+            return new Promise((resolve, reject) => {
+                const image = createImage();
+                let settled = false;
+                const timeoutId = setTimeout(() => finish(reject, new Error(`Timed out loading ${src}`)), timeoutMs);
+
+                function cleanup() {
+                    clearTimeout(timeoutId);
+                    image.onload = null;
+                    image.onerror = null;
+                }
+
+                function finish(fn, value) {
+                    if (settled) return;
+                    settled = true;
+                    cleanup();
+                    fn(value);
+                }
+
+                image.onload = async () => {
+                    try {
+                        if (typeof image.decode === 'function') await image.decode();
+                    } catch {
+                        // Some browsers reject decode() for cross-origin images even after load.
+                    }
+                    finish(resolve, { src });
+                };
+                image.onerror = () => finish(reject, new Error(`Failed to load ${src}`));
+                image.src = src;
+
+                if (image.complete && image.naturalWidth > 0) {
+                    Promise.resolve().then(() => image.onload && image.onload());
+                }
+            });
+        };
+    }
+
+    function createCatImageService({
+        imageEl,
+        baseHref,
+        random = Math.random,
+        loadSource = createBrowserLoader(),
+    } = {}) {
+        let activeRequestId = 0;
+
+        async function loadFallback(requestId, alt) {
+            const fallbacks = buildFallbackOrder(getFallbackPhotos(baseHref), random);
+            let lastError = null;
+
+            for (const photo of fallbacks) {
+                if (requestId !== activeRequestId) {
+                    return { applied: false, stale: true, source: 'fallback', src: photo.src, alt };
+                }
+
+                try {
+                    await loadSource(photo.src, { timeoutMs: LOAD_TIMEOUT_MS });
+                    if (requestId !== activeRequestId) {
+                        return { applied: false, stale: true, source: 'fallback', src: photo.src, alt };
+                    }
+                    applyImage(imageEl, { src: photo.src, alt, source: 'fallback' });
+                    return { applied: true, stale: false, source: 'fallback', src: photo.src, alt, photo };
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            clearLoading(imageEl);
+            return { applied: false, stale: requestId !== activeRequestId, source: 'fallback', src: imageEl?.src || '', alt, error: lastError };
+        }
+
+        return {
+            async load(keyword, lang) {
+                const requestId = ++activeRequestId;
+                const alt = buildAltText(lang, keyword);
+                const remoteSrc = buildCataasUrl(keyword);
+                markLoading(imageEl, alt);
+
+                try {
+                    await loadSource(remoteSrc, { timeoutMs: LOAD_TIMEOUT_MS });
+                    if (requestId !== activeRequestId) {
+                        return { applied: false, stale: true, source: 'cataas', src: remoteSrc, alt };
+                    }
+                    applyImage(imageEl, { src: remoteSrc, alt, source: 'cataas' });
+                    return { applied: true, stale: false, source: 'cataas', src: remoteSrc, alt };
+                } catch (error) {
+                    const fallbackResult = await loadFallback(requestId, alt);
+                    if (!fallbackResult.applied && !fallbackResult.stale) {
+                        console.warn('Cat image fallback failed:', error, fallbackResult.error);
+                    }
+                    return fallbackResult.applied || fallbackResult.stale
+                        ? fallbackResult
+                        : { ...fallbackResult, error };
+                }
+            },
+            getActiveRequestId() {
+                return activeRequestId;
+            },
+        };
+    }
+
+    return {
+        create: createCatImageService,
+        __test__: {
+            LOCAL_CAT_PHOTOS,
+            buildAltText,
+            buildCataasUrl,
+            buildFallbackOrder,
+            createCatImageService,
+            getFallbackPhotos,
+            resolveAssetUrl,
+        },
+    };
+})();
+
+const catImageService = CatImageService.create({ imageEl: dom.catImage });
 
 async function setCatImage(keyword) {
-    const img = dom.catImage;
-    img.style.opacity = '0';
-    const url = await fetchCatUrl(keyword);
-    img.onload = () => { img.style.opacity = '1'; };
-    img.src = url;
+    return catImageService.load(keyword, state.currentLang);
 }
 
 // ═══════════ Text-to-Speech Engine ═══════════
