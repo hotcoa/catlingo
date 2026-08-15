@@ -1,6 +1,7 @@
 # Catlingo
 
-Catlingo is a static postcard-style language practice app with French, Korean, and Hebrew lesson decks.
+Catlingo is a static postcard-style language practice app with French, Korean,
+Hebrew, and Spanish lesson decks.
 
 ## Local preview
 
@@ -9,16 +10,14 @@ Catlingo is a static postcard-style language practice app with French, Korean, a
 
 ## Repository layout
 
-- `index.html` - public entry file at the site root
-- `lang.html` - main Catlingo app shell
+- `index.html` - main Catlingo app at the site root
+- `lang.html` - compatibility redirect to `index.html`
 - `lang-app.js`, `lang-auth*.js`, `lang-config.js`, `lang.css` - client code, auth bootstrap, config, and styles
 - `data/` - lesson decks and language catalog
 - `assets/` - static assets, including fallback cat photos
 
-## GitHub Pages deployment
+## Publishing
 
-- Publish from the `main` branch and the `/ (root)` folder.
-- Keep `CNAME` committed with `catlingo.hiyoglow.com`.
-- Keep `.nojekyll` committed so Pages serves the site as plain static files.
-- Add the DNS record `catlingo CNAME hotcoa.github.io`.
-- In **Settings -> Pages**, set the custom domain to `catlingo.hiyoglow.com` and enable **Enforce HTTPS** after DNS is verified and the certificate is issued.
+The repository does not configure a custom domain. If GitHub Pages is enabled
+later, publish from the `main` branch and the `/ (root)` folder. `.nojekyll`
+keeps the site served as plain static files.
