@@ -3,26 +3,33 @@
  * Clean, modular architecture for the language learning app.
  */
 
-// ═══════════ Firebase Setup ═══════════
-const firebaseConfig = {
-    apiKey: "AIzaSyBhEuX8lcxlkDwbm-J90Unq2JuAMi73u8s",
-    authDomain: "cat-language-1ecd4.firebaseapp.com",
-    projectId: "cat-language-1ecd4",
-    storageBucket: "cat-language-1ecd4.firebasestorage.app",
-    messagingSenderId: "539587205119",
-    appId: "1:539587205119:web:a6e9f463c519829194f9ca",
-    measurementId: "G-E6G2J3RECG",
-};
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+const appConfig = globalThis.CATLINGO_CONFIG || { features: { firebaseAuth: false }, firebase: { scripts: [], project: {} } };
+const authService = globalThis.CatlingoAuth && typeof globalThis.CatlingoAuth.createAuthService === 'function'
+    ? globalThis.CatlingoAuth.createAuthService({
+        config: appConfig,
+        documentObj: document,
+        windowObj: window,
+        log: console,
+    })
+    : {
+        start: async () => ({ enabled: false, ready: false }),
+        renderAuthUi() {},
+        setLoginError() {},
+        signInWithGoogle: async () => { throw new Error('Google sign-in is unavailable.'); },
+        signOut: async () => {},
+        onAuthStateChanged() { return () => {}; },
+        ensureUserProfile: async () => null,
+        saveUserProfile: async () => {},
+        isEnabled() { return false; },
+        isReady() { return false; },
+    };
 
 // ═══════════ Application State ═══════════
 const state = {
     currentUser: null,
     userProfile: null,
     currentLang: null,
+    selectedLevel: null,
     currentQuiz: null,       // { phrase, segments, blankIndex, answer, answerNorm, options, answered }
     score: 0,
     hasLocalPref: false,
@@ -698,28 +705,16 @@ function spawnConfetti() {
 // ═══════════ Firestore Service (only used when signed in) ═══════════
 const UserService = {
     async loadProfile() {
-        const ref = db.collection('users').doc(state.currentUser.uid);
-        const doc = await ref.get();
-        if (doc.exists) {
-            state.userProfile = doc.data();
-        } else {
-            state.userProfile = {
-                displayName: state.currentUser.displayName,
-                email: state.currentUser.email,
-                photoURL: state.currentUser.photoURL,
-                selectedLanguage: null,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            };
-            await ref.set(state.userProfile);
-        }
+        state.userProfile = await authService.ensureUserProfile(state.currentUser);
+        state.selectedLevel = state.userProfile.selectedLevel ?? null;
     },
 
     async saveProfile() {
-        if (!state.currentUser) return;
-        await db.collection('users').doc(state.currentUser.uid).set({
+        if (!state.currentUser || !authService.isReady()) return;
+        await authService.saveUserProfile(state.currentUser, {
             selectedLanguage: state.currentLang,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+            selectedLevel: state.selectedLevel ?? null,
+        });
     },
 };
 
@@ -860,37 +855,28 @@ function initDemo() {
 // language/level choice to Firestore so it follows the user across devices.
 async function signIn() {
     try {
-        dom.loginError.textContent = '';
-        await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        authService.setLoginError('');
+        await authService.signInWithGoogle();
     } catch (e) {
-        dom.loginError.textContent = e.message;
+        authService.setLoginError(e.message);
         console.error('Sign-in failed:', e);
     }
 }
 
 function updateAuthUI() {
-    const user = state.currentUser;
-    dom.logoutBtn.style.display = user ? '' : 'none';
-    dom.topLoginBtn.style.display = user ? 'none' : '';
-    if (user) {
-        const hasPhoto = !!user.photoURL;
-        dom.userAvatar.style.display = hasPhoto ? '' : 'none';
-        dom.userAvatar.src = user.photoURL || '';
-        dom.userName.textContent = user.displayName || user.email || '';
-    } else {
-        dom.userAvatar.style.display = 'none';
-        dom.userAvatar.src = '';
-        dom.userName.textContent = '';
-    }
+    authService.renderAuthUi(state.currentUser);
 }
 
 dom.topLoginBtn.addEventListener('click', signIn);
 const googleLoginBtn = document.getElementById('googleLoginBtn');
 if (googleLoginBtn) googleLoginBtn.addEventListener('click', signIn);
-dom.logoutBtn.addEventListener('click', () => auth.signOut());
+dom.logoutBtn.addEventListener('click', () => {
+    authService.signOut().catch(e => console.error('Sign-out failed:', e));
+});
 
-auth.onAuthStateChanged(async (user) => {
+async function handleAuthStateChanged(user) {
     state.currentUser = user || null;
+    state.userProfile = null;
     updateAuthUI();
     if (!user) return;
 
@@ -912,7 +898,14 @@ auth.onAuthStateChanged(async (user) => {
     } catch (e) {
         console.error('Profile load failed:', e);
     }
-});
+}
+
+async function initializeOptionalAuth() {
+    const result = await authService.start();
+    updateAuthUI();
+    if (!result.ready) return;
+    authService.onAuthStateChanged(handleAuthStateChanged);
+}
 
 // ═══════════ Boot ═══════════
 // Show content immediately, honoring the last saved language/level from
@@ -928,6 +921,7 @@ function boot() {
     renderTopLangStamps();
     showScreen('mainApp');
     showMainContent();
+    initializeOptionalAuth().catch(e => console.error('Auth startup failed:', e));
 }
 
 // ═══════════ Event Listeners ═══════════

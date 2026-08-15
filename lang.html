@@ -8,9 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -19,7 +16,7 @@
     <div class="login-card">
         <h1>🐱 Le Chat Parisien</h1>
         <p>Learn languages with adorable animals</p>
-        <button class="google-btn" id="googleLoginBtn">
+        <button class="google-btn" id="googleLoginBtn" style="display:none">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
             Sign in with Google
         </button>
@@ -37,8 +34,8 @@
     <div class="top-bar">
         <div class="top-bar-left">
             <img class="user-avatar" id="userAvatar" src="" alt="User avatar" style="display:none"/>
-            <span class="user-name" id="userName"></span>
-            <button class="google-btn-sm" id="topLoginBtn">
+            <span class="user-name" id="userName" style="display:none"></span>
+            <button class="google-btn-sm" id="topLoginBtn" style="display:none">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""/>
                 <span>Sign in</span>
             </button>
@@ -126,11 +123,13 @@
     </div>
 </div>
 
-<!-- Scripts: shared catalog first, then per-language content, then app logic -->
+<!-- Scripts: shared catalog, language content, inactive auth feature, then app logic -->
 <script src="data/catalog.js"></script>
 <script src="data/french.js"></script>
 <script src="data/korean.js"></script>
 <script src="data/hebrew.js"></script>
+<script src="lang-config.js"></script>
+<script src="lang-auth.js"></script>
 <script src="lang-app.js"></script>
 </body>
 </html>
