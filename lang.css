@@ -857,8 +857,12 @@ button.vocab-word.has-gloss.is-open {
     border-color: var(--burgundy);
     background: rgba(158, 43, 37, 0.12);
     color: var(--burgundy);
-    opacity: 0.6;
-    cursor: not-allowed;
+}
+
+.quiz-choice.is-correct {
+    border-color: #1f7a4d;
+    background: rgba(31, 122, 77, 0.14);
+    color: #1f7a4d;
 }
 
 /* Feedback + gloss lines */

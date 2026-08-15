@@ -599,16 +599,12 @@ function renderSentence() {
     dom.demoPhrase.innerHTML = html;
 }
 
-// Render the multiple-choice options (hidden once answered).
+// Render the multiple-choice options.
 function renderAnswerArea() {
     const quiz = state.currentQuiz;
     const choices = dom.quizChoices;
     if (!quiz || !choices) return;
 
-    if (quiz.answered) {
-        choices.hidden = true;
-        return;
-    }
     choices.hidden = false;
     choices.innerHTML = quiz.options
         .map(opt => `<button type="button" class="quiz-choice" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`)
@@ -617,16 +613,17 @@ function renderAnswerArea() {
 
 function submitAnswer(guess) {
     const quiz = state.currentQuiz;
-    if (!quiz || quiz.answered) return;
+    if (!quiz) return;
     const ui = currentUI();
     const correct = foldWord(guess) === foldWord(quiz.answer) && foldWord(guess) !== '';
 
     if (correct) {
-        quiz.answered = true;
-        state.score++;
-        updateScoreBadge();
-        renderSentence();
-        renderAnswerArea();
+        if (!quiz.answered) {
+            quiz.answered = true;
+            state.score++;
+            updateScoreBadge();
+            renderSentence();
+        }
         setFeedback(ui.correct, 'is-correct');
         if (dom.wordGloss) dom.wordGloss.textContent = ui.tapHint;
     } else {
@@ -1240,9 +1237,12 @@ function wireQuizControls() {
         choices.dataset.wired = '1';
         choices.addEventListener('click', e => {
             const btn = e.target.closest('.quiz-choice');
-            if (!btn || btn.disabled) return;
+            if (!btn) return;
+            choices.querySelectorAll('.quiz-choice').forEach(choice =>
+                choice.classList.remove('is-wrong', 'is-correct')
+            );
             const correct = submitAnswer(btn.dataset.opt);
-            if (!correct) { btn.classList.add('is-wrong'); btn.disabled = true; }
+            btn.classList.add(correct ? 'is-correct' : 'is-wrong');
         });
     }
 
