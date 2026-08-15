@@ -1,5 +1,5 @@
 /**
- * Le Chat Parisien — Application Logic
+ * Catlingo — Application Logic
  * Clean, modular architecture for the language learning app.
  */
 
@@ -68,6 +68,86 @@ function createFallbackAuthService(config) {
         },
     };
 }
+
+const CATLINGO_CONTENT = globalThis.CATLINGO_CONTENT || {};
+const LANGS = globalThis.LANGS || CATLINGO_CONTENT.catalog?.languages || {};
+const THEMES = globalThis.THEMES || CATLINGO_CONTENT.catalog?.themes || {};
+const LEVELS = globalThis.LEVELS || CATLINGO_CONTENT.catalog?.levels || {};
+const LEVEL_DEMO = globalThis.LEVEL_DEMO || CATLINGO_CONTENT.phraseBanks || {};
+const LESSONS = globalThis.LESSONS || CATLINGO_CONTENT.lessons || {};
+const GLOSS = globalThis.GLOSS || CATLINGO_CONTENT.glosses || {};
+const catlingoPage = globalThis.CATLINGO_PAGE || null;
+const HTML_LANGS = Object.freeze({
+    french: 'fr',
+    korean: 'ko',
+    hebrew: 'he',
+});
+const THEME_COLORS = Object.freeze({
+    french: '#F5EFE0',
+    korean: '#F5F1E6',
+    hebrew: '#F4ECD7',
+});
+const DEFAULT_THEME = Object.freeze({
+    title: 'Catlingo',
+    subtitle: 'Postcard language practice with adorable animals',
+    postmark: ['CAT', 'LINGO', 'POST'],
+    caption: 'Catlingo',
+    motivation: 'A postcard at a time, you keep growing. 💪',
+    ui: {
+        langue: 'Language',
+        level: 'Level',
+        carnet: 'Notebook',
+        pratique: 'Practice',
+        encore: 'More',
+        grammar: 'Grammar & vocab',
+        howTo: 'How to use it',
+        spotlight: 'Phrase spotlight',
+        related: 'Related phrases',
+        comingSoon: 'More phrases are on the way.',
+        seen: 'Phrases seen:',
+        start: 'Choose a language and level to begin.',
+        quizPrompt: 'Complete the phrase',
+        correct: 'Nice work! 🎉',
+        tryAgain: 'Try again',
+        reveal: 'Show the answer',
+        tapHint: 'Tap a word to see its meaning',
+        score: 'Score:',
+        next: 'Next postcard ✉️',
+    },
+});
+const REQUIRED_DOM_IDS = Object.freeze([
+    'mainApp',
+    'langPicker',
+    'langGrid',
+    'levelGrid',
+    'chooserContinueBtn',
+    'mainContent',
+    'mainTitle',
+    'mainSubtitle',
+    'catImage',
+    'demoPhrase',
+    'demoMeaning',
+    'quizPromptLabel',
+    'quizChoices',
+    'quizFeedback',
+    'wordGloss',
+    'speakBtn',
+    'refreshBtn',
+    'progressFill',
+    'phrasesLearned',
+    'levelBadge',
+    'motivationText',
+    'postmark',
+    'catCaption',
+    'topLangStamps',
+    'levelStamps',
+    'lessonTopTab',
+    'lessonTopTitle',
+    'lessonTopBody',
+    'lessonBottomTab',
+    'lessonBottomTitle',
+    'lessonExamples',
+]);
 
 const appConfig = globalThis.CATLINGO_CONFIG || { features: { firebaseAuth: false }, firebase: { scripts: [], project: {} } };
 const authService = globalThis.CatlingoAuthBootstrap && typeof globalThis.CatlingoAuthBootstrap.createAuthBootstrap === 'function'
@@ -142,15 +222,111 @@ const dom = {
 // ═══════════ Utilities ═══════════
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    const screen = document.getElementById(id);
+    if (screen) screen.classList.add('active');
 }
 
-// Native UI labels for the selected language (falls back to French).
+function startupStatusNode() {
+    return document.getElementById('startupStatus');
+}
+
+function showStartupMessage(message, state = 'info') {
+    const node = startupStatusNode();
+    if (!node || !message) return;
+    node.hidden = false;
+    node.dataset.state = state;
+    node.textContent = message;
+}
+
+function hideStartupMessage() {
+    const node = startupStatusNode();
+    if (!node) return;
+    node.hidden = true;
+    node.removeAttribute('data-state');
+}
+
+function markStartupReady() {
+    document.documentElement.dataset.catlingoReady = 'true';
+    if (catlingoPage && typeof catlingoPage.markReady === 'function') {
+        catlingoPage.markReady();
+        return;
+    }
+    hideStartupMessage();
+}
+
+function updateDocumentLanguage(langKey) {
+    const isRtl = !!LANGS[langKey]?.rtl;
+    document.documentElement.lang = HTML_LANGS[langKey] || 'en';
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+}
+
+function updateThemeColor(color) {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && color) meta.setAttribute('content', color);
+}
+
+function currentTheme() {
+    return THEMES[state.currentLang] || THEMES.french || DEFAULT_THEME;
+}
+
+function updateDocumentBranding(langKey, theme, { generic = false } = {}) {
+    const resolvedTheme = theme || currentTheme();
+    document.title = generic
+        ? 'Catlingo | Learn languages through postcards'
+        : `Catlingo | ${resolvedTheme.title || DEFAULT_THEME.title}`;
+    updateDocumentLanguage(langKey);
+    updateThemeColor(THEME_COLORS[langKey] || THEME_COLORS.french);
+}
+
+function missingDomIds() {
+    return REQUIRED_DOM_IDS.filter(id => !document.getElementById(id));
+}
+
+function missingContentBits() {
+    const missing = [];
+    const languageKeys = Object.keys(LANGS);
+
+    if (!languageKeys.length) missing.push('language catalog');
+    if (!Object.keys(THEMES).length) missing.push('postcard themes');
+    if (!Object.keys(LEVELS).length) missing.push('level catalog');
+    if (!STABLE_LEVELS.length) missing.push('stable levels');
+
+    for (const langKey of languageKeys) {
+        if (!THEMES[langKey]) missing.push(`${langKey} theme`);
+        const phraseBank = LEVEL_DEMO[langKey];
+        if (!phraseBank) {
+            missing.push(`${langKey} phrase bank`);
+            continue;
+        }
+        for (const levelKey of STABLE_LEVELS) {
+            if (!Array.isArray(phraseBank[levelKey])) {
+                missing.push(`${langKey} ${levelKey} phrases`);
+            }
+        }
+    }
+
+    return missing;
+}
+
+function failStartup(message, error) {
+    showScreen('mainApp');
+    if (dom.langPicker) dom.langPicker.style.display = 'none';
+    if (dom.mainContent) dom.mainContent.style.display = 'none';
+    showStartupMessage(message, 'error');
+    setVisibleAuthStatus('');
+    if (error) {
+        console.error(message, error);
+    } else {
+        console.error(message);
+    }
+}
+
+// Native UI labels for the selected language (falls back to the default theme).
 function currentUI() {
-    return (THEMES[state.currentLang] || THEMES.french).ui;
+    return currentTheme().ui || DEFAULT_THEME.ui;
 }
 
-const STABLE_LEVELS = (CATLINGO_CONTENT && CATLINGO_CONTENT.catalog && CATLINGO_CONTENT.catalog.stableLevelKeys)
+const STABLE_LEVELS = Array.isArray(CATLINGO_CONTENT.catalog?.stableLevelKeys)
     ? CATLINGO_CONTENT.catalog.stableLevelKeys.slice()
     : Object.keys(LEVELS || {});
 
@@ -188,7 +364,7 @@ function normalizeStoredSelection(selection) {
 }
 
 function updateLocalizedLabels(theme) {
-    const ui = theme.ui;
+    const ui = (theme && theme.ui) || DEFAULT_THEME.ui;
     if (dom.langueLabel) dom.langueLabel.textContent = ui.langue;
     if (dom.levelLabel) dom.levelLabel.textContent = ui.level;
     if (dom.pickerLangLabel) dom.pickerLangLabel.textContent = ui.langue;
@@ -275,7 +451,7 @@ function foldWord(w) {
 }
 
 function glossFor(word) {
-    const dict = (typeof GLOSS !== 'undefined' && GLOSS[state.currentLang]) || null;
+    const dict = GLOSS[state.currentLang] || null;
     if (!dict) return null;
     return dict[normalizeWord(word)] || null;
 }
@@ -493,7 +669,7 @@ function showWordGloss(btn) {
 // Find the most relevant grammar/vocab lesson for a phrase. Lessons are
 // ordered specific → general, so the first pattern match wins.
 function findLesson(phrase, lang) {
-    const lessons = (typeof LESSONS !== 'undefined' && LESSONS[lang]) || null;
+    const lessons = LESSONS[lang] || null;
     if (!lessons || !phrase) return null;
     const text = phrase.p || '';
     for (const lesson of lessons) {
@@ -851,13 +1027,21 @@ const TTS = (() => {
     let cachedVoices = [];
     let voiceCache = {};
     let lastGender = null;
+    const supported = typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined';
 
     function loadVoices() {
+        if (!supported) {
+            cachedVoices = [];
+            voiceCache = {};
+            return;
+        }
         cachedVoices = speechSynthesis.getVoices();
         voiceCache = {};
     }
 
-    speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    if (supported && typeof speechSynthesis.addEventListener === 'function') {
+        speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    }
     loadVoices();
 
     function isNeural(voice) {
@@ -908,6 +1092,7 @@ const TTS = (() => {
     }
 
     function pickVoice(langKey) {
+        if (!supported) return null;
         const pool = buildPool(langKey);
         const config = VOICE_CONFIG[langKey];
         if (!config) return null;
@@ -936,6 +1121,10 @@ const TTS = (() => {
     function speak() {
         const text = (state.currentQuiz && state.currentQuiz.phrase.p) || dom.demoPhrase.textContent;
         if (!text || !state.currentLang) return;
+        if (!supported) {
+            setFeedback('Audio playback is not available in this browser.', 'is-wrong');
+            return;
+        }
 
         speechSynthesis.cancel();
 
@@ -1011,8 +1200,10 @@ const UserService = {
 // ═══════════ UI Rendering ═══════════
 function renderTopLangStamps() {
     const wrap = dom.topLangStamps;
+    if (!wrap) return;
+
     wrap.innerHTML = Object.entries(LANGS).map(([key, lang]) => `
-        <button type="button" class="stamp-btn${key === state.currentLang ? ' active' : ''}" data-lang="${key}" aria-pressed="${key === state.currentLang}">
+        <button type="button" class="stamp-btn${key === state.currentLang ? ' active' : ''}" data-lang="${key}" aria-label="Switch language to ${escapeHtml(lang.name)}" aria-pressed="${key === state.currentLang}">
             <span class="stamp-icon">${lang.flag}</span>
             <span class="stamp-text">${lang.name}</span>
         </button>
@@ -1031,7 +1222,7 @@ function renderLevelStamps() {
         const level = LEVELS[levelKey];
         const disabled = !state.currentLang || (levelKey !== 'beginner' && !levelHasContent(state.currentLang, levelKey));
         return `
-        <button type="button" class="stamp-btn${levelKey === state.currentLevel ? ' active' : ''}" data-level="${levelKey}" aria-pressed="${levelKey === state.currentLevel}"${disabled ? ' disabled' : ''}>
+        <button type="button" class="stamp-btn${levelKey === state.currentLevel ? ' active' : ''}" data-level="${levelKey}" aria-label="Switch level to ${escapeHtml(level.name)}" aria-pressed="${levelKey === state.currentLevel}"${disabled ? ' disabled' : ''}>
             <span class="stamp-icon">${level.emoji}</span>
             <span class="stamp-text">${level.name}</span>
         </button>`;
@@ -1067,11 +1258,13 @@ function wireQuizControls() {
 
 // ═══════════ Language Selection ═══════════
 function showLangPicker() {
+    const theme = state.currentLang ? currentTheme() : DEFAULT_THEME;
     dom.langPicker.style.display = 'block';
     dom.mainContent.style.display = 'none';
     renderTopLangStamps();
     renderLevelStamps();
-    updateLocalizedLabels(THEMES[state.currentLang] || THEMES.french);
+    updateLocalizedLabels(theme);
+    updateDocumentBranding(state.currentLang, theme, { generic: true });
     dom.langPicker.setAttribute('dir', LANGS[state.currentLang]?.rtl ? 'rtl' : 'ltr');
 
     dom.langGrid.innerHTML = Object.entries(LANGS).map(([key, lang]) => `
@@ -1182,8 +1375,9 @@ function showMainContent() {
     dom.langPicker.style.display = 'none';
     dom.mainContent.style.display = 'flex';
 
-    const lang = LANGS[state.currentLang];
-    const theme = THEMES[state.currentLang] || THEMES.french;
+    const lang = LANGS[state.currentLang] || { hi: 'Hello!' };
+    const theme = currentTheme();
+    updateDocumentBranding(state.currentLang, theme);
 
     // Right-to-left languages (e.g. Hebrew) render the target phrase RTL for a native feel.
     const isRtl = !!lang.rtl;
@@ -1241,7 +1435,7 @@ function initDemo() {
     if (state.activeDemos.length) {
         nextDemo();
     } else {
-        const lang = LANGS[state.currentLang];
+        const lang = LANGS[state.currentLang] || { hi: 'Hello!' };
         const ui = currentUI();
         dom.demoPhrase.textContent = lang.hi;
         dom.demoMeaning.textContent = ui.start;
@@ -1272,12 +1466,14 @@ function updateAuthUI() {
     authService.renderAuthUi(state.currentUser);
 }
 
-dom.topLoginBtn.addEventListener('click', signIn);
+if (dom.topLoginBtn) dom.topLoginBtn.addEventListener('click', signIn);
 const googleLoginBtn = document.getElementById('googleLoginBtn');
 if (googleLoginBtn) googleLoginBtn.addEventListener('click', signIn);
-dom.logoutBtn.addEventListener('click', () => {
-    authService.signOut().catch(e => console.error('Sign-out failed:', e));
-});
+if (dom.logoutBtn) {
+    dom.logoutBtn.addEventListener('click', () => {
+        authService.signOut().catch(e => console.error('Sign-out failed:', e));
+    });
+}
 
 async function handleAuthStateChanged(user) {
     state.currentUser = user || null;
@@ -1320,6 +1516,18 @@ async function initializeOptionalAuth() {
 // Show content immediately, honoring the last saved language/level from
 // localStorage — no login required.
 function boot() {
+    const domIssues = missingDomIds();
+    if (domIssues.length) {
+        failStartup(`Catlingo could not start because required page elements are missing: ${domIssues.join(', ')}.`);
+        return;
+    }
+
+    const contentIssues = missingContentBits();
+    if (contentIssues.length) {
+        failStartup(`Catlingo could not start because required local data is missing: ${contentIssues.join(', ')}.`);
+        return;
+    }
+
     const prefs = normalizeStoredSelection(LocalPrefs.read());
     state.currentLang = prefs.lang;
     state.currentLevel = prefs.level;
@@ -1337,12 +1545,13 @@ function boot() {
     } else {
         showLangPicker();
     }
+    markStartupReady();
     initializeOptionalAuth().catch(e => console.error('Auth startup failed:', e));
 }
 
 // ═══════════ Event Listeners ═══════════
-dom.refreshBtn.addEventListener('click', nextDemo);
-dom.speakBtn.addEventListener('click', () => TTS.speak());
+if (dom.refreshBtn) dom.refreshBtn.addEventListener('click', nextDemo);
+if (dom.speakBtn) dom.speakBtn.addEventListener('click', () => TTS.speak());
 if (dom.chooserContinueBtn) dom.chooserContinueBtn.addEventListener('click', continueFromPicker);
 
 boot();

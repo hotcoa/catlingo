@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Le Chat Parisien — Language Learning App
+   Catlingo — Language Learning App
    ═══════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poiret+One&family=Josefin+Sans:wght@300;400;600;700&display=swap');
@@ -59,6 +59,37 @@ body {
     font-family: var(--font-body);
     min-height: 100vh;
     overflow-x: hidden;
+    background: var(--gradient-bg);
+    color: var(--navy);
+    line-height: 1.5;
+}
+
+/* ─── Startup / no-script status ─── */
+.startup-banner,
+.noscript-banner {
+    width: min(1100px, calc(100% - 2rem));
+    margin: 0.85rem auto 0;
+    padding: 0.75rem 1rem;
+    position: relative;
+    z-index: 80;
+    border-radius: 14px;
+    border: 1px solid rgba(27, 42, 74, 0.16);
+    background: rgba(255, 253, 247, 0.92);
+    box-shadow: var(--shadow-sm);
+    color: var(--navy);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.startup-banner[hidden] {
+    display: none !important;
+}
+
+.startup-banner[data-state="error"],
+.noscript-banner {
+    border-color: rgba(158, 43, 37, 0.22);
+    color: var(--burgundy);
+    background: rgba(255, 245, 246, 0.96);
 }
 
 /* ─── Screens ─── */

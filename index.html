@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Catlingo | Learn languages through postcards</title>
+    <meta name="description" content="Catlingo turns language practice into postcard-sized lessons with guided onboarding, language and level controls, cat-photo fallbacks, and responsive French, Korean, and Hebrew study decks.">
+    <meta name="application-name" content="Catlingo">
+    <meta name="theme-color" content="#F5EFE0">
+    <meta name="color-scheme" content="light">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="canonical" href="https://catlingo.hiyoglow.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Catlingo">
+    <meta property="og:url" content="https://catlingo.hiyoglow.com/">
+    <meta property="og:title" content="Catlingo | Learn languages through postcards">
+    <meta property="og:description" content="Practice French, Korean, and Hebrew through postcard-style lessons with gentle onboarding, responsive controls, and cat-photo fallbacks.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Catlingo | Learn languages through postcards">
+    <meta name="twitter:description" content="Practice French, Korean, and Hebrew through postcard-style lessons with gentle onboarding, responsive controls, and cat-photo fallbacks.">
+    <link rel="stylesheet" href="lang.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            function statusNode() {
+                return document.getElementById('startupStatus');
+            }
+
+            function showStatus(message, state) {
+                const node = statusNode();
+                if (!node) return;
+                node.hidden = false;
+                node.dataset.state = state || 'info';
+                node.textContent = message;
+            }
+
+            function hideStatus() {
+                const node = statusNode();
+                if (!node) return;
+                node.hidden = true;
+                node.removeAttribute('data-state');
+            }
+
+            window.CATLINGO_PAGE = {
+                showStartupError(message) {
+                    showStatus(message, 'error');
+                },
+                markReady() {
+                    document.documentElement.dataset.catlingoReady = 'true';
+                    hideStatus();
+                },
+            };
+
+            window.addEventListener('error', function (event) {
+                const target = event.target;
+                if (target && target.tagName === 'SCRIPT') {
+                    const src = target.getAttribute('src') || '';
+                    if (/^(data\/|lang-app\.js$)/.test(src)) {
+                        showStatus('Catlingo could not load a required local file: ' + src, 'error');
+                    }
+                    return;
+                }
+                if (event.error && document.documentElement.dataset.catlingoReady !== 'true') {
+                    showStatus('Catlingo hit a startup error. Reload the page or reopen index.html from this folder.', 'error');
+                }
+            }, true);
+
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    if (document.documentElement.dataset.catlingoReady === 'true') return;
+                    showStatus(
+                        'Catlingo could not finish loading. Make sure index.html, lang-app.js, and the data files are all available in this folder.',
+                        'error'
+                    );
+                }, 0);
+            });
+        })();
+    </script>
+</head>
+<body>
+<noscript>
+    <div class="noscript-banner" role="status">Catlingo needs JavaScript to load lessons. Enable it to use the postcard practice deck.</div>
+</noscript>
+<div id="startupStatus" class="startup-banner" role="status" aria-live="polite">Loading Catlingo… If this takes more than a moment, make sure index.html, lang-app.js, and the data files are all in this folder.</div>
+
+<!-- ═══ Login Screen (optional — sign-in also available from the top bar) ═══ -->
+<div id="loginScreen" class="screen">
+    <div class="login-card">
+        <h1>🐱 Catlingo</h1>
+        <p>Postcard-sized language practice with adorable animals</p>
+        <button type="button" class="google-btn" id="googleLoginBtn" style="display:none" aria-label="Sign in with Google">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""/>
+            Sign in with Google
+        </button>
+        <div class="login-error" id="loginError" role="alert" aria-live="assertive"></div>
+    </div>
+</div>
+
+<!-- ═══ Loading Screen ═══ -->
+<div id="loadingScreen" class="screen">
+    <div class="loader" role="status" aria-live="polite">🐱 Loading Catlingo…</div>
+</div>
+
+<!-- ═══ Main App ═══ -->
+<div id="mainApp" class="screen active">
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <img class="user-avatar" id="userAvatar" src="" alt="Signed-in user avatar" style="display:none"/>
+            <span class="user-name" id="userName" style="display:none"></span>
+            <button type="button" class="google-btn-sm" id="topLoginBtn" style="display:none" aria-label="Sign in with Google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""/>
+                <span>Sign in</span>
+            </button>
+        </div>
+        <div class="top-bar-right">
+            <div class="stamp-row">
+                <span class="stamp-row-label" id="langueLabel">Language</span>
+                <div id="topLangStamps" role="group" aria-label="Language choices"></div>
+            </div>
+            <div class="top-divider"></div>
+            <div class="stamp-row">
+                <span class="stamp-row-label" id="levelLabel">Level</span>
+                <div id="levelStamps" role="group" aria-label="Level choices"></div>
+            </div>
+            <div class="top-divider"></div>
+            <button type="button" class="logout-btn" id="logoutBtn" style="display:none">Sign out</button>
+        </div>
+    </div>
+    <div id="authStatus" class="auth-status" role="alert" aria-live="assertive" style="display:none"></div>
+
+    <!-- Language Picker -->
+    <div id="langPicker" class="lang-picker-wrap" style="display:none">
+        <div class="picker-card">
+            <h2>Choose your language and level</h2>
+            <p>Pick both before your first lesson. You can change them anytime from the top bar.</p>
+            <div class="picker-sections">
+                <section class="picker-section" aria-labelledby="pickerLangLabel">
+                    <h3 id="pickerLangLabel">Language</h3>
+                    <div class="lang-grid" id="langGrid" role="group" aria-label="Language picker"></div>
+                </section>
+                <section class="picker-section" aria-labelledby="pickerLevelLabel">
+                    <h3 id="pickerLevelLabel">Level</h3>
+                    <div class="level-grid" id="levelGrid" role="group" aria-label="Level picker"></div>
+                </section>
+            </div>
+            <button type="button" class="picker-continue-btn" id="chooserContinueBtn" disabled>Continue</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" style="display:none">
+        <div class="layout">
+            <!-- Left: the postcard -->
+            <div class="container">
+                <div class="postmark" id="postmark">CACHET<br/>DE LA POSTE<br/>PARIS</div>
+                <div class="bunting" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                </div>
+                <div class="main-header">
+                    <h1 class="title" id="mainTitle">Catlingo</h1>
+                    <p class="subtitle" id="mainSubtitle">Postcard language practice with adorable animals</p>
+                </div>
+                <div class="cat-container">
+                    <div class="cat-frame">
+                        <img id="catImage" class="cat-image" src="" alt="Catlingo postcard illustration" width="180" height="180" decoding="async"/>
+                        <div class="cat-caption" id="catCaption">Catlingo</div>
+                    </div>
+                </div>
+                <div class="phrase-container quiz">
+                    <div class="quiz-head">
+                        <span class="quiz-prompt" id="quizPromptLabel">Complete the phrase</span>
+                    </div>
+                    <div id="demoMeaning" class="quiz-hint">Choose a language and level to start.</div>
+                    <div class="quiz-sentence-row">
+                        <div id="demoPhrase">Choose a language and level to start.</div>
+                        <button type="button" class="speak-btn" id="speakBtn" title="Listen to pronunciation" aria-label="Listen to the current phrase">🔊</button>
+                    </div>
+                    <div class="quiz-choices" id="quizChoices" hidden></div>
+                    <div class="quiz-feedback" id="quizFeedback" aria-live="polite"></div>
+                    <div class="word-gloss" id="wordGloss" aria-live="polite"></div>
+                </div>
+                <button type="button" id="refreshBtn" class="refresh-btn" aria-label="Show another postcard">Start learning ✉️</button>
+                <div class="progress-bar" aria-hidden="true">
+                    <div id="progressFill" class="progress-fill" style="width:0%"></div>
+                </div>
+                <div class="stats">
+                    <span><span id="seenLabel">Phrases seen:</span> <span id="phrasesLearned">0</span></span>
+                    <span id="levelBadge" class="score-badge">Score: 0</span>
+                </div>
+                <p class="motivation-text" id="motivationText">A postcard at a time, you keep growing. 💪</p>
+            </div>
+
+            <!-- Right: the lesson carnet -->
+            <aside class="lesson-panel" id="lessonPanel" aria-label="Lesson notes">
+                <div class="lesson-card">
+                    <div class="lesson-card-head">
+                        <span class="lesson-tab" id="lessonTopTab">Notebook</span>
+                        <h3 id="lessonTopTitle">Grammar &amp; vocab</h3>
+                    </div>
+                    <div id="lessonTopBody"></div>
+                </div>
+
+                <div class="lesson-card">
+                    <div class="lesson-card-head">
+                        <span class="lesson-tab lesson-tab-alt" id="lessonBottomTab">Practice</span>
+                        <h3 id="lessonBottomTitle">How to use it</h3>
+                    </div>
+                    <div class="example-list" id="lessonExamples"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts: shared catalog, language content, inactive auth feature, then app logic -->
+<script src="data/catalog.js"></script>
+<script src="data/french.js"></script>
+<script src="data/korean.js"></script>
+<script src="data/hebrew.js"></script>
+<script src="lang-config.js"></script>
+<script src="lang-auth.js"></script>
+<script src="lang-auth-bootstrap.js"></script>
+<script src="lang-app.js"></script>
+</body>
+</html>
