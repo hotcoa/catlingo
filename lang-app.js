@@ -85,14 +85,14 @@ const state = {
     currentUser: null,
     userProfile: null,
     currentLang: null,
-    selectedLevel: null,
+    currentLevel: null,
     currentQuiz: null,       // { phrase, segments, blankIndex, answer, answerNorm, options, answered }
     score: 0,
     hasLocalPref: false,
     demoCount: 0,
     activeDemos: [],
     lastDemoIndex: -1,
-    wordPool: { lang: null, words: [] },
+    wordPool: { lang: null, level: null, words: [] },
 };
 
 // ═══════════ DOM References ═══════════
@@ -107,6 +107,10 @@ const dom = {
     get levelLabel() { return document.getElementById('levelLabel'); },
     get langPicker() { return document.getElementById('langPicker'); },
     get langGrid() { return document.getElementById('langGrid'); },
+    get levelGrid() { return document.getElementById('levelGrid'); },
+    get chooserContinueBtn() { return document.getElementById('chooserContinueBtn'); },
+    get pickerLangLabel() { return document.getElementById('pickerLangLabel'); },
+    get pickerLevelLabel() { return document.getElementById('pickerLevelLabel'); },
     get mainContent() { return document.getElementById('mainContent'); },
     get mainTitle() { return document.getElementById('mainTitle'); },
     get mainSubtitle() { return document.getElementById('mainSubtitle'); },
@@ -146,6 +150,59 @@ function currentUI() {
     return (THEMES[state.currentLang] || THEMES.french).ui;
 }
 
+const STABLE_LEVELS = (CATLINGO_CONTENT && CATLINGO_CONTENT.catalog && CATLINGO_CONTENT.catalog.stableLevelKeys)
+    ? CATLINGO_CONTENT.catalog.stableLevelKeys.slice()
+    : Object.keys(LEVELS || {});
+
+function isKnownLevel(level) {
+    return STABLE_LEVELS.includes(level);
+}
+
+function languageHasLevel(lang, level) {
+    const bank = LEVEL_DEMO[lang];
+    return !!(bank && Object.prototype.hasOwnProperty.call(bank, level));
+}
+
+function levelHasContent(lang, level) {
+    return languageHasLevel(lang, level) && Array.isArray(LEVEL_DEMO[lang][level]) && LEVEL_DEMO[lang][level].length > 0;
+}
+
+function resolveLevelForLanguage(lang, level, { fallbackToBeginner = true } = {}) {
+    if (!LANGS[lang]) return null;
+    if (level === 'beginner' && languageHasLevel(lang, level)) return level;
+    if (isKnownLevel(level) && levelHasContent(lang, level)) return level;
+    if (!fallbackToBeginner) return null;
+    if (languageHasLevel(lang, 'beginner')) return 'beginner';
+    return STABLE_LEVELS.find(candidate => languageHasLevel(lang, candidate)) || null;
+}
+
+function normalizeStoredSelection(selection) {
+    const lang = selection && LANGS[selection.lang] ? selection.lang : null;
+    if (!lang) return { lang: null, level: null, complete: false };
+
+    const hasSavedLevel = !!(selection && typeof selection.level === 'string' && selection.level.trim());
+    const level = hasSavedLevel
+        ? resolveLevelForLanguage(lang, selection.level, { fallbackToBeginner: true })
+        : null;
+    return { lang, level, complete: !!(lang && level) };
+}
+
+function updateLocalizedLabels(theme) {
+    const ui = theme.ui;
+    if (dom.langueLabel) dom.langueLabel.textContent = ui.langue;
+    if (dom.levelLabel) dom.levelLabel.textContent = ui.level;
+    if (dom.pickerLangLabel) dom.pickerLangLabel.textContent = ui.langue;
+    if (dom.pickerLevelLabel) dom.pickerLevelLabel.textContent = ui.level;
+}
+
+function selectionComplete() {
+    return !!(state.currentLang && state.currentLevel);
+}
+
+function chooserVisible() {
+    return dom.langPicker && dom.langPicker.style.display !== 'none';
+}
+
 // ═══════════ Local Preferences (works without an account) ═══════════
 // Persists the language + level choice so the site honors the last selection
 // on the next visit, whether or not the visitor is signed in.
@@ -167,15 +224,13 @@ function randomFrom(arr) {
 }
 
 // ═══════════ Phrase Engine ═══════════
-// The current UI still practices one combined deck per language, so flatten
-// the stable level banks into a single active postcard rotation.
 function buildActiveDemos() {
-    const banks = LEVEL_DEMO[state.currentLang];
-    state.activeDemos = banks
-        ? Object.values(banks).flat()
-        : (DEMO[state.currentLang] || []);
+    const bank = LEVEL_DEMO[state.currentLang];
+    state.activeDemos = (bank && state.currentLevel && Array.isArray(bank[state.currentLevel]))
+        ? bank[state.currentLevel].slice()
+        : [];
     state.lastDemoIndex = -1;
-    state.wordPool = { lang: null, words: [] };
+    state.wordPool = { lang: null, level: null, words: [] };
 }
 
 function nextDemo() {
@@ -240,7 +295,9 @@ function isCandidateWord(word) {
 
 // Unique pool of candidate words across the active bank (for MC distractors).
 function getWordPool() {
-    if (state.wordPool.lang === state.currentLang) return state.wordPool.words;
+    if (state.wordPool.lang === state.currentLang && state.wordPool.level === state.currentLevel) {
+        return state.wordPool.words;
+    }
     const seen = new Set();
     const words = [];
     for (const phrase of state.activeDemos) {
@@ -250,7 +307,7 @@ function getWordPool() {
             if (norm && !seen.has(norm)) { seen.add(norm); words.push(norm); }
         }
     }
-    state.wordPool = { lang: state.currentLang, words };
+    state.wordPool = { lang: state.currentLang, level: state.currentLevel, words };
     return words;
 }
 
@@ -940,14 +997,13 @@ function spawnConfetti() {
 const UserService = {
     async loadProfile() {
         state.userProfile = await authService.ensureUserProfile(state.currentUser);
-        state.selectedLevel = state.userProfile.selectedLevel ?? null;
     },
 
     async saveProfile() {
-        if (!state.currentUser || !authService.isReady()) return;
+        if (!state.currentUser || !authService.isReady() || !selectionComplete()) return;
         await authService.saveUserProfile(state.currentUser, {
             selectedLanguage: state.currentLang,
-            selectedLevel: state.selectedLevel ?? null,
+            selectedLevel: state.currentLevel,
         });
     },
 };
@@ -956,7 +1012,7 @@ const UserService = {
 function renderTopLangStamps() {
     const wrap = dom.topLangStamps;
     wrap.innerHTML = Object.entries(LANGS).map(([key, lang]) => `
-        <button class="stamp-btn${key === state.currentLang ? ' active' : ''}" data-lang="${key}">
+        <button type="button" class="stamp-btn${key === state.currentLang ? ' active' : ''}" data-lang="${key}" aria-pressed="${key === state.currentLang}">
             <span class="stamp-icon">${lang.flag}</span>
             <span class="stamp-text">${lang.name}</span>
         </button>
@@ -964,6 +1020,25 @@ function renderTopLangStamps() {
 
     wrap.querySelectorAll('.stamp-btn').forEach(btn =>
         btn.addEventListener('click', () => selectLanguage(btn.dataset.lang))
+    );
+}
+
+function renderLevelStamps() {
+    const wrap = dom.levelStamps;
+    if (!wrap) return;
+
+    wrap.innerHTML = STABLE_LEVELS.map(levelKey => {
+        const level = LEVELS[levelKey];
+        const disabled = !state.currentLang || (levelKey !== 'beginner' && !levelHasContent(state.currentLang, levelKey));
+        return `
+        <button type="button" class="stamp-btn${levelKey === state.currentLevel ? ' active' : ''}" data-level="${levelKey}" aria-pressed="${levelKey === state.currentLevel}"${disabled ? ' disabled' : ''}>
+            <span class="stamp-icon">${level.emoji}</span>
+            <span class="stamp-text">${level.name}</span>
+        </button>`;
+    }).join('');
+
+    wrap.querySelectorAll('.stamp-btn').forEach(btn =>
+        btn.addEventListener('click', () => selectLevel(btn.dataset.level))
     );
 }
 
@@ -994,36 +1069,116 @@ function wireQuizControls() {
 function showLangPicker() {
     dom.langPicker.style.display = 'block';
     dom.mainContent.style.display = 'none';
+    renderTopLangStamps();
+    renderLevelStamps();
+    updateLocalizedLabels(THEMES[state.currentLang] || THEMES.french);
+    dom.langPicker.setAttribute('dir', LANGS[state.currentLang]?.rtl ? 'rtl' : 'ltr');
 
     dom.langGrid.innerHTML = Object.entries(LANGS).map(([key, lang]) => `
-        <div class="lang-card" data-lang="${key}">
+        <button type="button" class="lang-card${key === state.currentLang ? ' active' : ''}" data-lang="${key}" aria-pressed="${key === state.currentLang}">
             <div class="lang-card-flag">${lang.flag}</div>
             <div class="lang-card-name">${lang.name}</div>
             <div class="lang-card-native">${lang.native}</div>
-        </div>
+        </button>
     `).join('');
+
+    dom.levelGrid.innerHTML = STABLE_LEVELS.map(levelKey => {
+        const level = LEVELS[levelKey];
+        const active = levelKey === state.currentLevel;
+        const disabled = !!state.currentLang && levelKey !== 'beginner' && !levelHasContent(state.currentLang, levelKey);
+        return `
+        <button type="button" class="level-card${active ? ' active' : ''}" data-level="${levelKey}" aria-pressed="${active}"${disabled ? ' disabled' : ''}>
+            <div class="level-card-emoji">${level.emoji}</div>
+            <div class="level-card-name">${level.name}</div>
+            <div class="level-card-desc">${level.desc}</div>
+        </button>`;
+    }).join('');
+
+    if (dom.chooserContinueBtn) {
+        dom.chooserContinueBtn.disabled = !selectionComplete();
+    }
 
     dom.langGrid.querySelectorAll('.lang-card').forEach(card =>
         card.addEventListener('click', () => selectLanguage(card.dataset.lang))
     );
+    dom.levelGrid.querySelectorAll('.level-card').forEach(card =>
+        card.addEventListener('click', () => selectLevel(card.dataset.level))
+    );
 }
 
-async function selectLanguage(lang) {
-    state.currentLang = lang;
-    renderTopLangStamps();
-    showMainContent();
+function continueFromPicker() {
+    if (!selectionComplete()) return;
     persistSelection();
+    showMainContent();
 }
 
-// Remember the language locally always and to the account if signed in.
+function applyLanguageSelection(lang, { allowDefaultLevel } = {}) {
+    if (!LANGS[lang]) return;
+    state.currentLang = lang;
+    if (state.currentLevel) {
+        state.currentLevel = resolveLevelForLanguage(lang, state.currentLevel, { fallbackToBeginner: true });
+    } else if (allowDefaultLevel) {
+        state.currentLevel = resolveLevelForLanguage(lang, 'beginner', { fallbackToBeginner: true });
+    }
+}
+
+function selectLanguage(lang) {
+    applyLanguageSelection(lang, { allowDefaultLevel: !chooserVisible() });
+    renderTopLangStamps();
+    renderLevelStamps();
+
+    if (chooserVisible()) {
+        showLangPicker();
+        return;
+    }
+
+    if (!selectionComplete()) {
+        showLangPicker();
+        return;
+    }
+
+    persistSelection();
+    showMainContent();
+}
+
+function selectLevel(level) {
+    if (!isKnownLevel(level)) return;
+
+    if (state.currentLang) {
+        state.currentLevel = resolveLevelForLanguage(state.currentLang, level, { fallbackToBeginner: true });
+    } else {
+        state.currentLevel = level;
+    }
+
+    renderLevelStamps();
+    if (chooserVisible()) {
+        showLangPicker();
+        return;
+    }
+
+    if (!selectionComplete()) {
+        showLangPicker();
+        return;
+    }
+
+    persistSelection();
+    showMainContent();
+}
+
 function persistSelection() {
+    if (!selectionComplete()) return;
     state.hasLocalPref = true;
-    LocalPrefs.write({ lang: state.currentLang });
+    LocalPrefs.write({ lang: state.currentLang, level: state.currentLevel });
     if (state.currentUser) UserService.saveProfile().catch(e => console.error('Save failed:', e));
 }
 
 // ═══════════ Main Content ═══════════
 function showMainContent() {
+    if (!selectionComplete()) {
+        showLangPicker();
+        return;
+    }
+
     dom.langPicker.style.display = 'none';
     dom.mainContent.style.display = 'flex';
 
@@ -1033,6 +1188,7 @@ function showMainContent() {
     // Right-to-left languages (e.g. Hebrew) render the target phrase RTL for a native feel.
     const isRtl = !!lang.rtl;
     dom.demoPhrase.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    dom.mainContent.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
     dom.mainContent.classList.toggle('rtl-lang', isRtl);
 
     // Re-skin the whole postcard for the selected language.
@@ -1049,13 +1205,15 @@ function showMainContent() {
     dom.motivationText.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
 
     // Localize the shared chrome (top-bar labels + stats) to the selected language.
-    if (dom.langueLabel) dom.langueLabel.textContent = theme.ui.langue;
+    updateLocalizedLabels(theme);
     const seenLabel = document.getElementById('seenLabel');
     if (seenLabel) seenLabel.textContent = theme.ui.seen;
     if (dom.quizPromptLabel) dom.quizPromptLabel.textContent = theme.ui.quizPrompt;
     dom.refreshBtn.textContent = theme.ui.next;
 
     state.score = 0;
+    renderTopLangStamps();
+    renderLevelStamps();
     updateScoreBadge();
     wireQuizControls();
     initDemo();
@@ -1063,8 +1221,21 @@ function showMainContent() {
 
 function initDemo() {
     state.demoCount = 0;
+    state.currentQuiz = null;
     dom.phrasesLearned.textContent = '0';
     dom.progressFill.style.width = '0%';
+    if (dom.quizChoices) {
+        dom.quizChoices.hidden = true;
+        dom.quizChoices.innerHTML = '';
+    }
+    if (dom.quizFeedback) {
+        dom.quizFeedback.textContent = '';
+        dom.quizFeedback.className = 'quiz-feedback';
+    }
+    if (dom.wordGloss) {
+        dom.wordGloss.textContent = '';
+        dom.wordGloss.classList.remove('is-active');
+    }
     buildActiveDemos();
 
     if (state.activeDemos.length) {
@@ -1116,14 +1287,18 @@ async function handleAuthStateChanged(user) {
 
     try {
         await UserService.loadProfile();
-        const savedLang = state.userProfile.selectedLanguage;
+        const savedSelection = normalizeStoredSelection({
+            lang: state.userProfile.selectedLanguage,
+            level: state.userProfile.selectedLevel,
+        });
 
-        if (!state.hasLocalPref && savedLang && LANGS[savedLang]) {
-            // Visitor hadn't made a local choice — restore their account choice.
-            state.currentLang = savedLang;
+        if (!state.hasLocalPref && savedSelection.complete) {
+            state.currentLang = savedSelection.lang;
+            state.currentLevel = savedSelection.level;
             state.hasLocalPref = true;
-            LocalPrefs.write({ lang: state.currentLang });
+            LocalPrefs.write({ lang: state.currentLang, level: state.currentLevel });
             renderTopLangStamps();
+            renderLevelStamps();
             showMainContent();
         } else {
             // Push the local choice up to the account.
@@ -1145,21 +1320,29 @@ async function initializeOptionalAuth() {
 // Show content immediately, honoring the last saved language/level from
 // localStorage — no login required.
 function boot() {
-    const prefs = LocalPrefs.read();
-    // Default experience: French — no picker screen shown.
-    // A saved local choice always overrides the default and is honored on return.
-    state.hasLocalPref = !!(prefs.lang && LANGS[prefs.lang]);
-    state.currentLang = state.hasLocalPref ? prefs.lang : 'french';
+    const prefs = normalizeStoredSelection(LocalPrefs.read());
+    state.currentLang = prefs.lang;
+    state.currentLevel = prefs.level;
+    state.hasLocalPref = prefs.complete;
+    if (prefs.complete) {
+        LocalPrefs.write({ lang: prefs.lang, level: prefs.level });
+    }
 
     updateAuthUI();
     renderTopLangStamps();
+    renderLevelStamps();
     showScreen('mainApp');
-    showMainContent();
+    if (prefs.complete) {
+        showMainContent();
+    } else {
+        showLangPicker();
+    }
     initializeOptionalAuth().catch(e => console.error('Auth startup failed:', e));
 }
 
 // ═══════════ Event Listeners ═══════════
 dom.refreshBtn.addEventListener('click', nextDemo);
 dom.speakBtn.addEventListener('click', () => TTS.speak());
+if (dom.chooserContinueBtn) dom.chooserContinueBtn.addEventListener('click', continueFromPicker);
 
 boot();

@@ -290,6 +290,13 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.stamp-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 .stamp-btn.active {
     background: var(--gold);
     border-color: var(--burgundy);
@@ -373,8 +380,18 @@ body {
 
 /* ─── Language Picker ─── */
 .lang-picker-wrap {
+    width: 100%;
+    padding: 2rem 1rem 3rem;
+}
+
+.picker-card {
+    max-width: 860px;
+    margin: 0 auto;
+    background: rgba(255, 253, 247, 0.92);
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 0 7px var(--cream), var(--shadow-lg);
+    padding: 2rem 1.5rem 1.75rem;
     text-align: center;
-    padding: 2rem;
 }
 
 .lang-picker-wrap h2 {
@@ -392,15 +409,45 @@ body {
     font-style: italic;
 }
 
-.lang-grid {
+.picker-card > p {
+    color: var(--burgundy);
+    margin-bottom: 1.5rem;
+    font-weight: 300;
+    font-style: italic;
+}
+
+.picker-sections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.picker-section {
+    text-align: left;
+}
+
+.picker-section h3 {
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 0.85rem;
+}
+
+.lang-grid,
+.level-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 1rem;
-    max-width: 600px;
-    margin: 0 auto;
 }
 
-.lang-card {
+.level-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.lang-card,
+.level-card {
     background: var(--ivory);
     border: 2px dashed var(--gold);
     border-radius: 8px;
@@ -409,12 +456,33 @@ body {
     cursor: pointer;
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-md);
+    width: 100%;
+    color: var(--navy);
 }
 
-.lang-card:hover {
+.lang-card:hover,
+.level-card:hover,
+.lang-card:focus-visible,
+.level-card:focus-visible {
     transform: translateY(-4px);
     border-color: var(--burgundy);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    outline: none;
+}
+
+.lang-card.active,
+.level-card.active {
+    background: rgba(201, 162, 39, 0.18);
+    border-color: var(--burgundy);
+    box-shadow: 0 0 0 3px rgba(158, 43, 37, 0.12), 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.lang-card:disabled,
+.level-card:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--shadow-md);
 }
 
 .lang-card-flag {
@@ -433,6 +501,53 @@ body {
     font-size: 0.85rem;
     color: var(--burgundy);
     font-weight: 300;
+}
+
+.level-card-emoji {
+    font-size: 2rem;
+    margin-bottom: 0.55rem;
+}
+
+.level-card-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.level-card-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.picker-continue-btn {
+    margin-top: 1.5rem;
+    min-width: 180px;
+    border: none;
+    border-radius: 999px;
+    background: var(--burgundy);
+    color: var(--ivory);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.9rem 1.8rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 8px 18px rgba(158, 43, 37, 0.35);
+}
+
+.picker-continue-btn:hover:not(:disabled),
+.picker-continue-btn:focus-visible:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(158, 43, 37, 0.42);
+    outline: none;
+}
+
+.picker-continue-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* ─── Postcard (Main Card) ─── */
@@ -1098,6 +1213,9 @@ button.vocab-word.has-gloss.is-open {
         width: 100%;
         align-self: auto;
     }
+    .picker-sections {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1173,15 +1291,20 @@ button.vocab-word.has-gloss.is-open {
 
     /* Language picker + login */
     .lang-picker-wrap { padding: 1.5rem 1rem; }
+    .picker-card { padding: 1.5rem 1rem 1.35rem; }
     .lang-picker-wrap h2 { font-size: 1.5rem; }
-    .lang-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
-    .lang-card { padding: 1.2rem 0.8rem; }
+    .lang-grid,
+    .level-grid { grid-template-columns: repeat(1, 1fr); gap: 0.8rem; }
+    .lang-card,
+    .level-card { padding: 1.2rem 0.8rem; }
     .lang-card-flag { font-size: 2rem; }
+    .level-card-emoji { font-size: 1.8rem; }
     .login-card { padding: 2rem 1.5rem; }
     .login-card h1 { font-size: 1.9rem; }
 
     /* Full-width, tappable primary button */
     .refresh-btn { font-size: 1rem; padding: 0.85rem 1.6rem; width: 100%; }
+    .picker-continue-btn { width: 100%; }
 
     /* Carnet: tighter cards; stack vocab term over its gloss so nothing clips */
     .lesson-card { padding: 1.15rem 1.05rem 1.25rem; }
