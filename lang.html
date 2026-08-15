@@ -126,8 +126,11 @@
     </div>
 </div>
 
-<!-- Scripts: data first, then app logic -->
-<script src="lang-data.js"></script>
+<!-- Scripts: shared catalog first, then per-language content, then app logic -->
+<script src="data/catalog.js"></script>
+<script src="data/french.js"></script>
+<script src="data/korean.js"></script>
+<script src="data/hebrew.js"></script>
 <script src="lang-app.js"></script>
 </body>
 </html>

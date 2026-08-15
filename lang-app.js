@@ -103,8 +103,8 @@ function randomFrom(arr) {
 }
 
 // ═══════════ Phrase Engine ═══════════
-// Every language now has a single level, so the active bank is simply the
-// flattened set of phrases for the current language.
+// The current UI still practices one combined deck per language, so flatten
+// the stable level banks into a single active postcard rotation.
 function buildActiveDemos() {
     const banks = LEVEL_DEMO[state.currentLang];
     state.activeDemos = banks
