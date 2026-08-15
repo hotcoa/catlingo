@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐱 Le Chat Parisien | Learn Languages</title>
+    <link rel="stylesheet" href="lang.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- ═══ Login Screen (optional — sign-in also available from the top bar) ═══ -->
+<div id="loginScreen" class="screen">
+    <div class="login-card">
+        <h1>🐱 Le Chat Parisien</h1>
+        <p>Learn languages with adorable animals</p>
+        <button class="google-btn" id="googleLoginBtn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+            Sign in with Google
+        </button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<!-- ═══ Loading Screen ═══ -->
+<div id="loadingScreen" class="screen">
+    <div class="loader">🐱 Loading...</div>
+</div>
+
+<!-- ═══ Main App ═══ -->
+<div id="mainApp" class="screen active">
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <img class="user-avatar" id="userAvatar" src="" alt="User avatar" style="display:none"/>
+            <span class="user-name" id="userName"></span>
+            <button class="google-btn-sm" id="topLoginBtn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""/>
+                <span>Sign in</span>
+            </button>
+        </div>
+        <div class="top-bar-right">
+            <div class="stamp-row">
+                <span class="stamp-row-label" id="langueLabel">Langue</span>
+                <div id="topLangStamps"></div>
+            </div>
+            <div class="top-divider"></div>
+            <button class="logout-btn" id="logoutBtn" style="display:none">Sign out</button>
+        </div>
+    </div>
+
+    <!-- Language Picker -->
+    <div id="langPicker" class="lang-picker-wrap" style="display:none">
+        <h2>What language are you learning?</h2>
+        <p>You can change this anytime from the top bar</p>
+        <div class="lang-grid" id="langGrid"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" style="display:none">
+        <div class="layout">
+            <!-- Left: the postcard -->
+            <div class="container">
+                <div class="postmark" id="postmark">CACHET<br/>DE LA POSTE<br/>PARIS</div>
+                <div class="bunting">
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                </div>
+                <div class="main-header">
+                    <h1 class="title" id="mainTitle">Le Chat Parisien</h1>
+                    <p class="subtitle" id="mainSubtitle">Learn French with adorable cats!</p>
+                </div>
+                <div class="cat-container">
+                    <div class="cat-frame">
+                        <img id="catImage" class="cat-image" src="" alt="Animal"/>
+                        <div class="cat-caption" id="catCaption">Paris</div>
+                    </div>
+                </div>
+                <div class="phrase-container quiz">
+                    <div class="quiz-head">
+                        <span class="quiz-prompt" id="quizPromptLabel">Complétez la phrase</span>
+                    </div>
+                    <div id="demoMeaning" class="quiz-hint">Click to start!</div>
+                    <div class="quiz-sentence-row">
+                        <div id="demoPhrase">Cliquez pour commencer!</div>
+                        <button class="speak-btn" id="speakBtn" title="Listen to pronunciation">🔊</button>
+                    </div>
+                    <div class="quiz-choices" id="quizChoices" hidden></div>
+                    <div class="quiz-feedback" id="quizFeedback" aria-live="polite"></div>
+                    <div class="word-gloss" id="wordGloss" aria-live="polite"></div>
+                </div>
+                <button id="refreshBtn" class="refresh-btn">Nouvelle carte postale ✉️</button>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width:0%"></div>
+                </div>
+                <div class="stats">
+                    <span><span id="seenLabel">Phrases seen:</span> <span id="phrasesLearned">0</span></span>
+                    <span id="levelBadge" class="score-badge">Score : 0</span>
+                </div>
+                <p class="motivation-text" id="motivationText">Chaque phrase vous rapproche de la maîtrise! 💪</p>
+            </div>
+
+            <!-- Right: the lesson carnet -->
+            <aside class="lesson-panel" id="lessonPanel">
+                <div class="lesson-card">
+                    <div class="lesson-card-head">
+                        <span class="lesson-tab" id="lessonTopTab">Le carnet</span>
+                        <h3 id="lessonTopTitle">Grammar &amp; vocab</h3>
+                    </div>
+                    <div id="lessonTopBody"></div>
+                </div>
+
+                <div class="lesson-card">
+                    <div class="lesson-card-head">
+                        <span class="lesson-tab lesson-tab-alt" id="lessonBottomTab">En pratique</span>
+                        <h3 id="lessonBottomTitle">How to use it</h3>
+                    </div>
+                    <div class="example-list" id="lessonExamples"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts: data first, then app logic -->
+<script src="lang-data.js"></script>
+<script src="lang-app.js"></script>
+</body>
+</html>

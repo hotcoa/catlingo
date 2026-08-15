@@ -1,0 +1,1184 @@
+/* ═══════════════════════════════════════════════════════════
+   Le Chat Parisien — Language Learning App
+   ═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poiret+One&family=Josefin+Sans:wght@300;400;600;700&display=swap');
+
+/* ─── Design Tokens ─── */
+:root {
+    --navy: #1B2A4A;
+    --cream: #F5EFE0;
+    --ivory: #FFFDF7;
+    --gold: #C9A227;
+    --burgundy: #9E2B25;
+    --text-muted: #5a5247;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.25);
+    --gradient-bg: linear-gradient(160deg, #EAF4FB 0%, #FBEAF0 55%, #FFF6E8 100%);
+    --font-display: 'Poiret One', serif;
+    --font-body: 'Josefin Sans', sans-serif;
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+}
+
+/* ─── Per-language postcard themes (override design tokens) ───
+   Applied to #mainContent as .theme-<lang>. CSS variables inherit,
+   so the whole postcard + carnet re-skin instantly on language change. */
+.theme-french {
+    --gold: #C9A227;      /* Parisian gilt */
+    --burgundy: #9E2B25;  /* wine red */
+    --cream: #F5EFE0;
+    --gradient-bg: linear-gradient(160deg, #EAF4FB 0%, #FBEAF0 55%, #FFF6E8 100%);
+}
+.theme-korean {
+    --gold: #3E7C5A;      /* celadon green (청자) */
+    --burgundy: #C0392B;  /* obangsaek red (단청) */
+    --cream: #F5F1E6;     /* hanji paper */
+    --gradient-bg: linear-gradient(160deg, #EAF3EC 0%, #FBEFE9 55%, #FFF7EA 100%);
+}
+.theme-hebrew {
+    --gold: #7E9B5B;      /* olive */
+    --burgundy: #2E6FA8;  /* tekhelet blue */
+    --cream: #F4ECD7;     /* Jerusalem stone */
+    --gradient-bg: linear-gradient(160deg, #EAF1F7 0%, #F3F0E2 55%, #FBF3E6 100%);
+}
+
+/* Retint the animated page background to match the active theme. */
+body:has(.theme-korean) { background: linear-gradient(160deg, #EAF3EC 0%, #FBEFE9 55%, #FFF7EA 100%); }
+body:has(.theme-hebrew) { background: linear-gradient(160deg, #EAF1F7 0%, #F3F0E2 55%, #FBF3E6 100%); }
+
+/* ─── Reset ─── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ─── Screens ─── */
+.screen {
+    display: none;
+    min-height: 100vh;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* ─── Login Screen ─── */
+#loginScreen {
+    background: var(--gradient-bg);
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 0 7px var(--ivory), var(--shadow-lg);
+    padding: 3rem 2.5rem;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    position: relative;
+}
+
+/* Corner ornaments (shared between login-card and container) */
+.login-card::before,
+.login-card::after,
+.container::before,
+.container::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--gold);
+    pointer-events: none;
+}
+
+.login-card::before,
+.container::before {
+    top: -9px;
+    left: -9px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.login-card::after,
+.container::after {
+    bottom: -9px;
+    right: -9px;
+    border-left: none;
+    border-top: none;
+}
+
+.login-card h1 {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+}
+
+.login-card p {
+    color: var(--burgundy);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    font-weight: 300;
+    font-style: italic;
+}
+
+.google-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: var(--ivory);
+    color: var(--navy);
+    border: 2px dashed var(--gold);
+    border-radius: 50px;
+    padding: 0.8rem 2rem;
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
+}
+
+.google-btn:hover {
+    border-color: var(--burgundy);
+    box-shadow: 0 4px 15px rgba(158, 43, 37, 0.25);
+    transform: translateY(-2px);
+}
+
+.google-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+.login-error {
+    color: var(--burgundy);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    min-height: 1.2rem;
+}
+
+/* ─── Loading Screen ─── */
+#loadingScreen {
+    background: var(--gradient-bg);
+    align-items: center;
+    justify-content: center;
+}
+
+.loader {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--navy);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ─── Top Bar ─── */
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgba(245, 239, 224, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 0.5rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+}
+
+.user-name {
+    font-size: 0.85rem;
+    color: var(--navy);
+    font-weight: 400;
+}
+
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.stamp-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.stamp-row-label {
+    font-size: 0.6rem;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-right: 0.1rem;
+    flex-shrink: 0;
+}
+
+#topLangStamps,
+#levelStamps {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.stamp-btn {
+    font-family: var(--font-body);
+    background: var(--ivory);
+    border: 2px dashed var(--gold);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--navy);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.stamp-btn .stamp-icon {
+    font-size: 1.2rem;
+}
+
+.stamp-btn .stamp-text {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stamp-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.stamp-btn.active {
+    background: var(--gold);
+    border-color: var(--burgundy);
+    color: var(--ivory);
+    box-shadow: 0 2px 8px rgba(201, 162, 39, 0.5);
+}
+
+.top-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(27, 42, 74, 0.2);
+    margin: 0 0.2rem;
+    flex-shrink: 0;
+}
+
+.logout-btn {
+    font-family: var(--font-body);
+    background: none;
+    border: 1px solid var(--navy);
+    border-radius: 50px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.logout-btn:hover {
+    border-color: var(--burgundy);
+    color: var(--burgundy);
+}
+
+/* Compact, optional sign-in button in the top bar */
+.google-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-body);
+    background: #fff;
+    border: 1px solid var(--navy);
+    border-radius: 50px;
+    padding: 0.32rem 0.85rem;
+    font-size: 0.85rem;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.google-btn-sm img {
+    width: 16px;
+    height: 16px;
+}
+
+.google-btn-sm:hover {
+    border-color: var(--gold);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* ─── Main App ─── */
+#mainApp {
+    background: var(--gradient-bg);
+    align-items: center;
+    justify-content: center;
+    padding-top: 70px;
+}
+
+/* ─── Language Picker ─── */
+.lang-picker-wrap {
+    text-align: center;
+    padding: 2rem;
+}
+
+.lang-picker-wrap h2 {
+    font-family: var(--font-display);
+    color: var(--navy);
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+}
+
+.lang-picker-wrap > p {
+    color: var(--burgundy);
+    margin-bottom: 2rem;
+    font-weight: 300;
+    font-style: italic;
+}
+
+.lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.lang-card {
+    background: var(--ivory);
+    border: 2px dashed var(--gold);
+    border-radius: 8px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-md);
+}
+
+.lang-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--burgundy);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.lang-card-flag {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.lang-card-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--navy);
+    font-weight: 600;
+}
+
+.lang-card-native {
+    font-size: 0.85rem;
+    color: var(--burgundy);
+    font-weight: 300;
+}
+
+/* ─── Postcard (Main Card) ─── */
+.container {
+    width: 90%;
+    max-width: 560px;
+    background: var(--cream);
+    padding: 1.75rem;
+    text-align: center;
+    position: relative;
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 0 7px var(--ivory), 0 20px 45px rgba(0, 0, 0, 0.35);
+}
+
+.postmark {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    width: 64px;
+    height: 64px;
+    border: 2.5px solid var(--burgundy);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-12deg);
+    opacity: 0.55;
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    color: var(--burgundy);
+    text-align: center;
+    line-height: 1.1;
+}
+
+.bunting {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.1rem;
+}
+
+.bunting span {
+    width: 0;
+    height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 16px solid var(--navy);
+    margin: 0 3px;
+}
+
+.bunting span:nth-child(3n+1) { border-top-color: var(--burgundy); }
+.bunting span:nth-child(3n+2) { border-top-color: var(--gold); }
+
+.main-header {
+    margin-bottom: 1.1rem;
+}
+
+.title {
+    font-family: var(--font-display);
+    color: var(--navy);
+    font-size: 2.6rem;
+    font-weight: 400;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    color: var(--burgundy);
+    font-size: 1rem;
+    font-style: italic;
+    font-weight: 300;
+    margin-top: 0.2rem;
+}
+
+/* ─── Korean postcard skin: obangsaek rainbow banner + bold gothic title ─── */
+.theme-korean .bunting {
+    gap: 0;
+    margin-bottom: 1.3rem;
+}
+.theme-korean .bunting span {
+    width: 34px;
+    height: 18px;
+    border: none;
+    border-radius: 2px;
+    margin: 0;
+    background: var(--navy);
+}
+.theme-korean .bunting span:nth-child(5n+1) { background: #C0392B; }
+.theme-korean .bunting span:nth-child(5n+2) { background: #E1B12C; }
+.theme-korean .bunting span:nth-child(5n+3) { background: #2E6FA8; }
+.theme-korean .bunting span:nth-child(5n+4) { background: #3E7C5A; }
+.theme-korean .bunting span:nth-child(5n+5) { background: #7D5BA6; }
+
+.theme-korean .title {
+    font-family: 'Gowun Batang', 'Apple SD Gothic Neo', 'Malgun Gothic', serif;
+    font-weight: 700;
+    color: #2B2B2B;
+    letter-spacing: 3px;
+}
+.theme-korean .subtitle {
+    font-family: 'Nanum Pen Script', 'Gaegu', cursive;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1.5rem;
+}
+.theme-korean .postmark {
+    font-family: 'Gothic A1', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    letter-spacing: 1px;
+}
+
+/* ─── Cat / Animal Frame ─── */
+.cat-container {
+    margin: 1.2rem auto;
+    width: 200px;
+    position: relative;
+}
+
+.cat-frame {
+    background: var(--ivory);
+    padding: 10px 10px 30px 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    transform: rotate(-1.2deg);
+    position: relative;
+}
+
+.cat-image {
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+    display: block;
+    filter: saturate(0.92) contrast(1.03);
+    transition: opacity var(--transition-normal);
+}
+
+.cat-caption {
+    font-family: var(--font-display);
+    color: var(--navy);
+    font-size: 0.85rem;
+    position: absolute;
+    bottom: 6px;
+    left: 0;
+    right: 0;
+    text-align: center;
+}
+
+/* ─── Phrase Display ─── */
+.phrase-container {
+    background: var(--ivory);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    border-left: 4px solid var(--burgundy);
+    border-right: 4px solid var(--navy);
+    box-shadow: var(--shadow-md);
+    text-align: left;
+}
+
+/* ─── Quiz ─── */
+.phrase-container.quiz { text-align: left; }
+
+.quiz-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.quiz-prompt {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--burgundy);
+}
+
+.quiz-hint {
+    font-size: 1.15rem;
+    color: var(--navy);
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 0.85rem;
+    padding: 0.55rem 0.75rem;
+    background: rgba(201, 162, 39, 0.12);
+    border-left: 3px solid var(--gold);
+    border-radius: 3px;
+    transition: opacity var(--transition-normal);
+}
+
+.quiz-sentence-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+#demoPhrase {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1.5;
+    transition: opacity var(--transition-normal);
+    font-family: var(--font-body);
+    flex: 1;
+}
+
+/* Clickable vocabulary word */
+.vocab-word {
+    display: inline-block;
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+button.vocab-word.has-gloss {
+    cursor: pointer;
+    border-bottom: 2px solid var(--gold);
+    border-radius: 2px 2px 0 0;
+    transition: background var(--transition-normal);
+}
+
+button.vocab-word.has-gloss:hover,
+button.vocab-word.has-gloss.is-open {
+    background: rgba(201, 162, 39, 0.18);
+}
+
+.vocab-word.is-answer {
+    color: var(--burgundy);
+    font-weight: 700;
+}
+
+/* Hidden word — blank or inline input */
+.quiz-blank {
+    display: inline-block;
+    min-width: 3ch;
+    border-bottom: 2px dashed var(--burgundy);
+    margin: 0 0.1em;
+    vertical-align: baseline;
+}
+
+/* Multiple-choice options */
+.quiz-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 1.1rem;
+}
+
+.quiz-choice {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+    background: var(--ivory);
+    border: 2px solid rgba(11, 31, 58, 0.18);
+    border-radius: 6px;
+    padding: 0.55rem 1.1rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.quiz-choice:hover:not(:disabled) {
+    border-color: var(--navy);
+    transform: translateY(-1px);
+}
+
+.quiz-choice.is-wrong {
+    border-color: var(--burgundy);
+    background: rgba(158, 43, 37, 0.12);
+    color: var(--burgundy);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Feedback + gloss lines */
+.quiz-feedback {
+    min-height: 1.3em;
+    margin-top: 0.85rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+.quiz-feedback.is-correct { color: #1f7a4d; }
+.quiz-feedback.is-wrong { color: var(--burgundy); }
+.quiz-feedback.is-reveal { color: var(--navy); }
+
+.word-gloss {
+    min-height: 1.2em;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.word-gloss.is-active { opacity: 1; color: var(--navy); }
+
+.score-badge {
+    background: rgba(201, 162, 39, 0.16);
+    color: var(--burgundy);
+    font-weight: 700;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    border-bottom: 2px solid var(--gold);
+}
+
+/* ─── Buttons ─── */
+.speak-btn {
+    background: radial-gradient(circle at 30% 30%, #e3c869, var(--gold));
+    color: var(--navy);
+    border: none;
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 12px rgba(201, 162, 39, 0.5);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.9rem;
+}
+
+.quiz-sentence-row .speak-btn { margin-top: 0; flex-shrink: 0; }
+
+.speak-btn:hover { transform: scale(1.1); }
+.speak-btn:active { transform: scale(0.95); }
+.speak-btn.speaking { animation: speakPulse 1s infinite; }
+
+@keyframes speakPulse {
+    0%, 100% { box-shadow: 0 4px 12px rgba(201, 162, 39, 0.5); }
+    50% { box-shadow: 0 4px 22px rgba(201, 162, 39, 0.85); }
+}
+
+.refresh-btn {
+    position: relative;
+    background: var(--burgundy);
+    color: var(--ivory);
+    border: none;
+    padding: 0.9rem 2.2rem 0.9rem 2.6rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: var(--font-body);
+    margin: 1.5rem 0;
+    clip-path: polygon(0% 0%, 4% 50%, 0% 100%, 100% 100%, 100% 0%);
+    box-shadow: 0 6px 18px rgba(158, 43, 37, 0.4);
+}
+
+.refresh-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(158, 43, 37, 0.5);
+}
+
+.refresh-btn:active {
+    transform: translateY(0);
+}
+
+/* ─── Progress & Stats ─── */
+.motivation-text {
+    color: var(--navy);
+    font-size: 0.9rem;
+    font-weight: 300;
+    margin-top: 1.3rem;
+    font-style: italic;
+}
+
+.progress-bar {
+    background: rgba(27, 42, 74, 0.12);
+    height: 6px;
+    border-radius: 0;
+    overflow: hidden;
+    margin: 1.4rem 0;
+    position: relative;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--burgundy), var(--gold));
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.8rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ─── Two-Column Layout (postcard + lesson carnet) ─── */
+.layout {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1.75rem;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.layout .container {
+    flex: 0 1 560px;
+    width: auto;
+    margin: 0;
+    min-width: 0;
+}
+
+/* ─── Lesson Carnet (right column) ─── */
+.lesson-panel {
+    flex: 1 1 320px;
+    max-width: 360px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    align-self: stretch;
+}
+
+.lesson-card {
+    background: var(--ivory);
+    border: 2px solid rgba(201, 162, 39, 0.55);
+    border-radius: 6px;
+    padding: 1.4rem 1.3rem 1.5rem;
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+.lesson-card-head {
+    margin-bottom: 1rem;
+}
+
+.lesson-tab {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ivory);
+    background: var(--navy);
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    transform: rotate(-1.5deg);
+}
+
+.lesson-tab-alt {
+    background: var(--burgundy);
+}
+
+.lesson-card-head h3 {
+    font-family: var(--font-display);
+    color: var(--navy);
+    font-size: 1.3rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    margin-top: 0.55rem;
+}
+
+/* Grammar note + vocabulary (matched lesson) */
+.lesson-note {
+    font-size: 0.95rem;
+    color: var(--navy);
+    line-height: 1.55;
+    font-weight: 300;
+    margin-bottom: 1rem;
+}
+
+.lesson-note b {
+    font-weight: 700;
+    color: var(--burgundy);
+}
+
+.lesson-note i {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.vocab-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed rgba(27, 42, 74, 0.2);
+}
+
+.vocab-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.vocab-term {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 0.95rem;
+    background: rgba(201, 162, 39, 0.16);
+    border-bottom: 2px solid var(--gold);
+    padding: 0.05rem 0.4rem;
+    border-radius: 3px;
+    overflow-wrap: break-word;
+}
+
+.vocab-gloss {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* Sentence spotlight — word-by-word breakdown (fallback view) */
+.spotlight-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.9rem;
+}
+
+.spotlight-word {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--navy);
+    background: rgba(201, 162, 39, 0.16);
+    border-bottom: 2px solid var(--gold);
+    padding: 0.1rem 0.5rem 0.15rem;
+    border-radius: 3px;
+    line-height: 1.5;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.spotlight-translation {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.45;
+    padding-top: 0.7rem;
+    border-top: 1px dashed rgba(27, 42, 74, 0.2);
+}
+
+.spotlight-empty {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Example / application sentences */
+.example-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.example-item {
+    text-align: left;
+    background: var(--cream);
+    border: 1px solid rgba(27, 42, 74, 0.12);
+    border-left: 3px solid var(--gold);
+    border-radius: 4px;
+    padding: 0.7rem 0.85rem;
+    font-family: var(--font-body);
+    width: 100%;
+}
+
+.example-target {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 0.15rem;
+    line-height: 1.35;
+    overflow-wrap: break-word;
+}
+
+.example-meaning {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+}
+
+/* RTL support inside the carnet */
+.rtl-lang .spotlight-words,
+.rtl-lang .example-target,
+.rtl-lang .vocab-term {
+    direction: rtl;
+    text-align: right;
+}
+
+.rtl-lang .example-item {
+    border-left: 1px solid rgba(27, 42, 74, 0.12);
+    border-right: 3px solid var(--gold);
+}
+
+/* ─── RTL Languages (Hebrew) ─── */
+.phrase-container #demoPhrase[dir="rtl"] {
+    text-align: right;
+    direction: rtl;
+}
+
+/* Quiz layout mirrors for RTL (Hebrew) */
+.rtl-lang .quiz-head,
+.rtl-lang .quiz-choices { flex-direction: row-reverse; }
+
+.rtl-lang .quiz-hint,
+.rtl-lang .quiz-feedback,
+.rtl-lang .word-gloss,
+.rtl-lang .quiz-prompt { text-align: right; direction: rtl; }
+
+.rtl-lang .quiz-hint { border-left: none; border-right: 3px solid var(--gold); }
+
+.rtl-lang .quiz-sentence-row { flex-direction: row-reverse; }
+
+.rtl-lang .phrase-container {
+    border-left: 4px solid var(--navy);
+    border-right: 4px solid var(--burgundy);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+    /* Stack #mainApp vertically. Critical: once the top bar becomes sticky
+       (≤768) it re-enters the flow, so #mainApp must be a column — otherwise
+       the header and the postcard sit side-by-side and the content overflows. */
+    #mainApp {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+    /* Stack the carnet below the postcard, centered */
+    .layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    .layout .container {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 520px;
+    }
+    .lesson-panel {
+        flex: 0 0 auto;
+        max-width: 520px;
+        width: 100%;
+        align-self: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Top bar leaves the fixed layer and becomes a full-width sticky header
+       that stacks its rows instead of scrolling sideways. */
+    .top-bar {
+        position: sticky;
+        align-self: stretch;
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        overflow-x: visible;
+        white-space: normal;
+        padding: 0.6rem 0.9rem;
+    }
+    .top-bar-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .top-bar-right {
+        width: 100%;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.9rem;
+        justify-content: flex-start;
+    }
+    #topLangStamps,
+    #levelStamps {
+        flex-wrap: wrap;
+    }
+    /* Push Sign out to the end of its wrapped row */
+    .logout-btn {
+        margin-left: auto;
+    }
+    /* Sticky header is in-flow now, so the fixed-bar offset is not needed */
+    #mainApp {
+        padding-top: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .layout { padding: 0 14px; gap: 1rem; }
+    .container { padding: 1.3rem 1.15rem; }
+    .title { font-size: 2rem; }
+    .subtitle { font-size: 0.9rem; }
+    .bunting span { border-left-width: 9px; border-right-width: 9px; border-top-width: 13px; margin: 0 2px; }
+    .cat-container { width: 168px; margin: 1rem auto; }
+    .cat-image { width: 148px; height: 148px; }
+    #demoPhrase { font-size: 1.3rem; }
+    #demoMeaning { font-size: 0.9rem; }
+    .phrase-container { padding: 1.2rem 1.1rem; }
+    .stats { font-size: 0.78rem; }
+    .motivation-text { font-size: 0.82rem; }
+
+    /* Top bar: compact avatar row + wrapped stamp chips */
+    .top-bar { padding: 0.5rem 0.7rem; gap: 0.5rem; }
+    .user-name { display: none; }
+    .stamp-row { gap: 0.3rem; }
+    .stamp-row-label { font-size: 0.55rem; }
+    .stamp-btn { padding: 0.4rem 0.55rem; min-height: 34px; }
+    .stamp-btn .stamp-icon { font-size: 1.15rem; }
+    .stamp-btn .stamp-text { font-size: 0.5rem; }
+    .top-divider { display: none; }
+    .logout-btn { padding: 0.35rem 0.7rem; }
+
+    .postmark { width: 52px; height: 52px; font-size: 0.5rem; top: 10px; right: 10px; }
+
+    /* Language picker + login */
+    .lang-picker-wrap { padding: 1.5rem 1rem; }
+    .lang-picker-wrap h2 { font-size: 1.5rem; }
+    .lang-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+    .lang-card { padding: 1.2rem 0.8rem; }
+    .lang-card-flag { font-size: 2rem; }
+    .login-card { padding: 2rem 1.5rem; }
+    .login-card h1 { font-size: 1.9rem; }
+
+    /* Full-width, tappable primary button */
+    .refresh-btn { font-size: 1rem; padding: 0.85rem 1.6rem; width: 100%; }
+
+    /* Carnet: tighter cards; stack vocab term over its gloss so nothing clips */
+    .lesson-card { padding: 1.15rem 1.05rem 1.25rem; }
+    .lesson-card-head h3 { font-size: 1.2rem; }
+    .vocab-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+    }
+    .vocab-gloss { text-align: left; }
+    .rtl-lang .vocab-item { align-items: flex-end; }
+    .rtl-lang .vocab-gloss { text-align: right; }
+}
+
+@media (max-width: 380px) {
+    .stamp-row-label { display: none; }
+    .stamp-btn .stamp-text { display: none; }
+    .stamp-btn .stamp-icon { font-size: 1.35rem; }
+    .stamp-btn { padding: 0.4rem 0.5rem; }
+    .title { font-size: 1.75rem; }
+    .cat-container { width: 150px; }
+    .cat-image { width: 132px; height: 132px; }
+    #demoPhrase { font-size: 1.2rem; }
+}
