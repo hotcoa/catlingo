@@ -814,7 +814,7 @@ button.vocab-word.has-gloss.is-open {
 }
 
 .vocab-word.is-answer {
-    color: var(--burgundy);
+    color: #1f7a4d;
     font-weight: 700;
 }
 
