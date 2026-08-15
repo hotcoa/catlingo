@@ -30,6 +30,12 @@
     native: 'עברית',
     hi: 'שלום!',
     rtl: true
+  },
+  spanish: {
+    name: 'Spanish',
+    flag: '🇪🇸',
+    native: 'Español',
+    hi: '¡Hola!'
   }
 };
     content.catalog.themes = {
@@ -145,6 +151,44 @@
       tapHint: 'הקישו על מילה לתרגום',
       score: ':ניקוד',
       next: 'הבא ✉️'
+    }
+  },
+  spanish: {
+    cls: 'theme-spanish',
+    title: 'El Gato Madrileño',
+    subtitle: 'Una postal de Madrid, cada día',
+    postmark: [
+      'CORREOS',
+      'MADRID',
+      'ESPAÑA'
+    ],
+    caption: 'Madrid',
+    refresh: 'Nueva postal ✉️',
+    placeholder: {
+      p: '¡Haz clic para empezar!',
+      m: 'Click to start!'
+    },
+    motivation: '¡Cada frase te acerca a la maestría! 💪',
+    ui: {
+      langue: 'Idioma',
+      level: 'Nivel',
+      carnet: 'El cuaderno',
+      pratique: 'En práctica',
+      encore: 'Más',
+      grammar: 'Gramática y vocabulario',
+      howTo: 'Cómo usarlo',
+      spotlight: 'La frase del día',
+      related: 'Otras frases',
+      comingSoon: 'Pronto habrá más frases.',
+      seen: 'Frases vistas:',
+      start: '¡Empecemos con el español!',
+      quizPrompt: 'Completa la frase',
+      correct: '¡Muy bien! 🎉',
+      tryAgain: 'Inténtalo de nuevo',
+      reveal: 'Ver la respuesta',
+      tapHint: 'Toca una palabra para ver la traducción',
+      score: 'Puntos:',
+      next: 'Siguiente ✉️'
     }
   }
 };

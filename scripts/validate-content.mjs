@@ -10,6 +10,7 @@ export const DEFAULT_DATA_FILES = [
     'data/french.js',
     'data/korean.js',
     'data/hebrew.js',
+    'data/spanish.js',
 ];
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);

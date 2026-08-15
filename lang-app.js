@@ -1019,6 +1019,20 @@ const TTS = (() => {
             ],
             femaleBias: 0.5,
         },
+        spanish: {
+            lang: 'es-ES',
+            female: [
+                'Elvira Online', 'Dalia Online',
+                'Elvira', 'Dalia', 'Paulina', 'Lupita',
+                'Google español',
+                'Mónica', 'Pilar',
+            ],
+            male: [
+                'Alvaro Online', 'Jorge Online',
+                'Alvaro', 'Jorge', 'Diego', 'Pablo', 'Raul',
+            ],
+            femaleBias: 0.5,
+        },
     };
 
     let cachedVoices = [];
