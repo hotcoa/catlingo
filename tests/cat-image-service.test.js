@@ -91,6 +91,52 @@ test('falls back to a local asset when the Cataas image fails', async () => {
     assert.equal(calls.length, 2);
 });
 
+test('falls back to a local asset when the Cataas decode step rejects', async () => {
+    const service = loadCatImageService();
+    const img = createImageElement();
+    const remoteUrl = service.__test__.buildCataasUrl('Decode');
+    const fallbackUrl = service.__test__.getFallbackPhotos('https://example.github.io/catlang/lang.html')[0].src;
+    const createImage = () => {
+        const stub = {
+            complete: false,
+            naturalWidth: 100,
+            onload: null,
+            onerror: null,
+            decode: () => Promise.reject(new Error('decode failed')),
+        };
+        Object.defineProperty(stub, 'src', {
+            get() { return stub._src || ''; },
+            set(value) {
+                stub._src = value;
+                Promise.resolve().then(() => {
+                    if (value === remoteUrl) {
+                        stub.onload && stub.onload();
+                        return;
+                    }
+                    stub.decode = () => Promise.resolve();
+                    stub.onload && stub.onload();
+                });
+            },
+        });
+        return stub;
+    };
+
+    const instance = service.__test__.createCatImageService({
+        imageEl: img,
+        baseHref: 'https://example.github.io/catlang/lang.html',
+        random: () => 0,
+        loadSource: service.__test__.createBrowserLoader(createImage),
+    });
+
+    const result = await instance.load('Decode', 'french');
+
+    assert.equal(result.source, 'fallback');
+    assert.equal(result.applied, true);
+    assert.equal(img.dataset.catSource, 'fallback');
+    assert.equal(img.src, fallbackUrl);
+    assert.equal(img.alt, 'Photo d’un chat pour « Decode »');
+});
+
 test('ignores stale earlier requests so the latest image wins', async () => {
     const service = loadCatImageService();
     const img = createImageElement();

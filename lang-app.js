@@ -639,10 +639,13 @@ const CatImageService = (() => {
                 }
 
                 image.onload = async () => {
-                    try {
-                        if (typeof image.decode === 'function') await image.decode();
-                    } catch {
-                        // Some browsers reject decode() for cross-origin images even after load.
+                    if (typeof image.decode === 'function') {
+                        try {
+                            await image.decode();
+                        } catch (error) {
+                            finish(reject, error);
+                            return;
+                        }
                     }
                     finish(resolve, { src });
                 };
@@ -726,6 +729,7 @@ const CatImageService = (() => {
             buildAltText,
             buildCataasUrl,
             buildFallbackOrder,
+            createBrowserLoader,
             createCatImageService,
             getFallbackPhotos,
             resolveAssetUrl,
