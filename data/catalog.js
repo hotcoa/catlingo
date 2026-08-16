@@ -194,9 +194,9 @@
 };
     content.catalog.levels = {
   beginner: {
-    name: 'Complete Beginner',
+    name: 'Beginner',
     emoji: '🌱',
-    desc: 'I know almost nothing yet'
+    desc: 'I know only the basics'
   },
   intermediate: {
     name: 'Intermediate',
